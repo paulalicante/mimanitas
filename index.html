@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Manitas — Ayuda local entre vecinos</title>
+    <meta name="description" content="Conecta con vecinos que necesitan ayuda o ofrece tu tiempo cuando estés libre. Sin agencias, sin intermediarios.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FFFBF5;
+            --text: #1a1a1a;
+            --accent: #E86A33;
+            --accent-light: #FFF0E8;
+            --muted: #6B7280;
+            --card-bg: #FFFFFF;
+            --shadow: rgba(232, 106, 51, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Subtle animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(232, 106, 51, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(232, 106, 51, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            padding: 1.5rem 0;
+            animation: fadeDown 0.6s ease-out;
+        }
+
+        .logo {
+            font-family: 'Fraunces', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            font-size: 2rem;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 4rem 0 5rem;
+            text-align: center;
+            animation: fadeUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero h1 {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+        }
+
+        .hero h1 span {
+            color: var(--accent);
+            font-style: italic;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--muted);
+            max-width: 540px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--accent-light);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        /* How it works */
+        .how-it-works {
+            padding: 3rem 0;
+            animation: fadeUp 0.8s ease-out 0.4s both;
+        }
+
+        .how-it-works h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.75rem;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .step {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 24px var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .step:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+
+        .step-number {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .step h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .step p {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        /* Signup form */
+        .signup {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 24px var(--shadow);
+            text-align: center;
+            margin: 3rem 0;
+            animation: fadeUp 0.8s ease-out 0.6s both;
+        }
+
+        .signup h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .signup p {
+            color: var(--muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-row input {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-row input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-row button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .form-row button:hover {
+            background: #D45A28;
+            transform: scale(1.02);
+        }
+
+        /* Features preview */
+        .features {
+            padding: 2rem 0 4rem;
+            animation: fadeUp 0.8s ease-out 0.8s both;
+        }
+
+        .features h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.75rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature span {
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        .feature strong {
+            color: var(--text);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+            font-size: 0.875rem;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .hero {
+                padding: 2rem 0 3rem;
+            }
+
+            .signup {
+                padding: 2rem 1.5rem;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-row button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="/" class="logo">
+                <span class="logo-icon">🔧</span>
+                Mi Manitas
+            </a>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="badge">🚀 Próximamente en Alicante</div>
+                <h1>Encuentra ayuda local.<br>Comparte tu <span>tiempo</span>.</h1>
+                <p>Conecta con vecinos que necesitan una mano — o ofrece tus habilidades cuando tengas tiempo libre. Sin agencias, sin intermediarios.</p>
+            </section>
+
+            <section class="how-it-works">
+                <h2>Cómo funciona</h2>
+                <div class="steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <h3>Publica lo que necesitas</h3>
+                        <p>"Necesito ayuda para pintar mi valla este sábado" — pon tu precio o tarifa por hora.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <h3>O comparte tu tiempo</h3>
+                        <p>Muestra cuándo estás disponible. Deja que te encuentren cuando necesiten ayuda.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <h3>Conecta y listo</h3>
+                        <p>Mensajea, acuerda las condiciones, completa el trabajo. El pago se guarda seguro hasta que ambos estéis contentos.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="signup">
+                <h2>Sé el primero en enterarte</h2>
+                <p>Lanzamos pronto. Únete a la lista de espera para acceso anticipado.</p>
+                <form class="form-row" action="#" method="post">
+                    <input type="email" placeholder="tu@email.com" required>
+                    <button type="submit">Avísame</button>
+                </form>
+            </section>
+
+            <section class="features">
+                <h2>¿Qué hace diferente a Mi Manitas?</h2>
+                <div class="feature-grid">
+                    <div class="feature">
+                        <span class="feature-icon">📅</span>
+                        <span><strong>Horarios flexibles</strong>Muestra tu disponibilidad real. Perfecto para trabajadores por turnos y estudiantes.</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🔒</span>
+                        <span><strong>Pago seguro</strong>El dinero se guarda en depósito hasta que el trabajo esté bien hecho.</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">📍</span>
+                        <span><strong>Hiperlocal</strong>Hecho para tu barrio, no un marketplace global sin alma.</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">🚗</span>
+                        <span><strong>Opción de recogida</strong>Los manitas pueden ofrecerte recogerte si estás a las afueras.</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Hecho con 🔧 en Alicante · <a href="mailto:hola@mimanitas.me">hola@mimanitas.me</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple form handling - replace with real backend later
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = this.querySelector('input').value;
+            const button = this.querySelector('button');
+            
+            button.textContent = '¡Apuntado! ✓';
+            button.style.background = '#10B981';
+            
+            // In reality, you'd send this to Supabase or similar
+            console.log('Email signup:', email);
+            
+            setTimeout(() => {
+                button.textContent = 'Avísame';
+                button.style.background = '';
+                this.querySelector('input').value = '';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
