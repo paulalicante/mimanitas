@@ -1,0 +1,22 @@
+
+[functions.send-verification-code]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-verification-code/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-verification-code/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-verification-code/*.html" ]
+
+[functions.verify-code]
+enabled = true
+verify_jwt = true
+import_map = "./functions/verify-code/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/verify-code/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/verify-code/*.html" ]

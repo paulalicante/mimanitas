@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Manitas - Admin Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #FFFBF5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #E86A33;
+            margin-bottom: 20px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .profile-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .type-helper {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #1976d2;
+        }
+
+        .type-seeker {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #f57c00;
+        }
+
+        .profile-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .profile-email {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .profile-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 12px;
+        }
+
+        .field {
+            display: flex;
+            padding: 8px 0;
+        }
+
+        .field-label {
+            font-weight: 600;
+            width: 120px;
+            color: #444;
+            font-size: 12px;
+        }
+
+        .field-value {
+            flex: 1;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .field-value.empty {
+            color: #f44336;
+            font-style: italic;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-clear {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .btn-clear:hover {
+            background: #ffcdd2;
+        }
+
+        .btn-edit {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .btn-edit:hover {
+            background: #bbdefb;
+        }
+
+        .btn-refresh {
+            background: #E86A33;
+            color: white;
+            padding: 12px 24px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .btn-refresh:hover {
+            background: #d45a23;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Mi Manitas - Admin Tool</h1>
+
+        <button class="btn-refresh" onclick="loadProfiles()">↻ Refresh</button>
+
+        <div id="message"></div>
+        <div id="profiles"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://hspubomqztpytlfqpwyn.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_-qcQys1xDd5mLhGGW38zKw_c3c0PtxC';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            setTimeout(() => {
+                messageDiv.className = '';
+                messageDiv.textContent = '';
+            }, 3000);
+        }
+
+        async function loadProfiles() {
+            const profilesDiv = document.getElementById('profiles');
+            profilesDiv.innerHTML = '<div class="loading">Loading profiles...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    profilesDiv.innerHTML = '<div class="loading">No profiles found</div>';
+                    return;
+                }
+
+                profilesDiv.innerHTML = data.map(profile => `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div>
+                                <span class="profile-type type-${profile.user_type}">${profile.user_type}</span>
+                                <div class="profile-name">${profile.full_name || 'No name'}</div>
+                                <div class="profile-email">${profile.email || 'No email'}</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-fields">
+                            <div class="field">
+                                <div class="field-label">ID:</div>
+                                <div class="field-value">${profile.id.substring(0, 8)}...</div>
+                            </div>
+                            <div class="field">
+                                <div class="field-label">Phone:</div>
+                                <div class="field-value ${!profile.phone ? 'empty' : ''}">${profile.phone || 'Not set'}</div>
+                            </div>
+                            <div class="field">
+                                <div class="field-label">Bio:</div>
+                                <div class="field-value ${!profile.bio ? 'empty' : ''}">${profile.bio || 'Not set'}</div>
+                            </div>
+                            <div class="field">
+                                <div class="field-label">Barrio:</div>
+                                <div class="field-value">${profile.barrio || 'Not set'}</div>
+                            </div>
+                            <div class="field">
+                                <div class="field-label">Date of Birth:</div>
+                                <div class="field-value">${profile.date_of_birth || 'Not set'}</div>
+                            </div>
+                            <div class="field">
+                                <div class="field-label">Created:</div>
+                                <div class="field-value">${new Date(profile.created_at).toLocaleString()}</div>
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button class="btn-clear" onclick="clearField('${profile.id}', 'phone')">Clear Phone</button>
+                            <button class="btn-clear" onclick="clearField('${profile.id}', 'bio')">Clear Bio</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                profilesDiv.innerHTML = '';
+                showMessage('Error loading profiles: ' + error.message, 'error');
+            }
+        }
+
+        async function clearField(userId, fieldName) {
+            if (!confirm(`Clear ${fieldName} for this user?`)) return;
+
+            try {
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({ [fieldName]: null })
+                    .eq('id', userId);
+
+                if (error) throw error;
+
+                showMessage(`${fieldName} cleared successfully`);
+                loadProfiles();
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Load profiles on page load
+        loadProfiles();
+    </script>
+</body>
+</html>
