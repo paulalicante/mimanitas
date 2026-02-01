@@ -458,6 +458,46 @@
             font-size: 0.9rem;
         }
 
+        /* ─── TECH STACK ─── */
+        .tech-strip {
+            background: var(--navy);
+            padding: 3.5rem 0;
+        }
+
+        .tech-strip .section-title {
+            color: var(--white);
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-strip .section-subtitle {
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 2.5rem;
+        }
+
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .tech-tag {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.85);
+            padding: 0.5rem 1.1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .tech-tag:hover {
+            background: rgba(255,255,255,0.14);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
         /* ─── TRUST ─── */
         .trust-grid {
             display: grid;
@@ -934,6 +974,28 @@
                     <h3>Precios transparentes</h3>
                     <p>Tu pones el precio. Sin sorpresas, sin comisiones ocultas que inflan el coste.</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── TECH STACK ─── -->
+    <section class="tech-strip" id="tecnologia">
+        <div class="container">
+            <h2 class="section-title animate">Construido con tecnologia seria</h2>
+            <p class="section-subtitle animate">Las herramientas detras de MiManitas</p>
+            <div class="tech-tags animate">
+                <span class="tech-tag">Flutter</span>
+                <span class="tech-tag">Dart</span>
+                <span class="tech-tag">Supabase</span>
+                <span class="tech-tag">PostgreSQL</span>
+                <span class="tech-tag">Stripe Connect</span>
+                <span class="tech-tag">Twilio</span>
+                <span class="tech-tag">Deno</span>
+                <span class="tech-tag">TypeScript</span>
+                <span class="tech-tag">Edge Functions</span>
+                <span class="tech-tag">Realtime WebSockets</span>
+                <span class="tech-tag">Vercel</span>
+                <span class="tech-tag">Web3Forms</span>
             </div>
         </div>
     </section>
