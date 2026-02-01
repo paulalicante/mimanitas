@@ -514,10 +514,17 @@
             margin: 0 auto;
         }
 
-        .no-greed-svg {
+        .no-greed-img {
             flex-shrink: 0;
-            width: 220px;
-            height: 220px;
+            width: 260px;
+            height: 260px;
+        }
+
+        .no-greed-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
         }
 
         .no-greed-text {
@@ -594,9 +601,9 @@
                 flex-direction: column;
                 text-align: center;
             }
-            .no-greed-svg {
-                width: 160px;
-                height: 160px;
+            .no-greed-img {
+                width: 180px;
+                height: 180px;
             }
             .no-greed-text .compare-row {
                 flex-direction: column;
@@ -1094,64 +1101,8 @@
     <section class="no-greed">
         <div class="container">
             <div class="no-greed-inner animate">
-                <div class="no-greed-svg">
-                    <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Prohibition circle background -->
-                        <circle cx="110" cy="110" r="100" fill="rgba(220,50,50,0.1)" stroke="#dc3232" stroke-width="6"/>
-
-                        <!-- Fat rabbit body -->
-                        <ellipse cx="110" cy="135" rx="42" ry="38" fill="#8B7355"/>
-                        <!-- Belly -->
-                        <ellipse cx="110" cy="140" rx="30" ry="28" fill="#C4A882"/>
-
-                        <!-- Head -->
-                        <circle cx="110" cy="88" r="28" fill="#8B7355"/>
-                        <!-- Face -->
-                        <ellipse cx="110" cy="92" rx="20" ry="18" fill="#C4A882"/>
-
-                        <!-- Ears -->
-                        <ellipse cx="95" cy="52" rx="9" ry="24" fill="#8B7355" transform="rotate(-10 95 52)"/>
-                        <ellipse cx="95" cy="52" rx="5" ry="18" fill="#D4B896" transform="rotate(-10 95 52)"/>
-                        <ellipse cx="125" cy="52" rx="9" ry="24" fill="#8B7355" transform="rotate(10 125 52)"/>
-                        <ellipse cx="125" cy="52" rx="5" ry="18" fill="#D4B896" transform="rotate(10 125 52)"/>
-
-                        <!-- Smug eyes -->
-                        <ellipse cx="100" cy="86" rx="4" ry="3" fill="#2a1a0a"/>
-                        <ellipse cx="120" cy="86" rx="4" ry="3" fill="#2a1a0a"/>
-                        <!-- Eyebrows (smug) -->
-                        <line x1="94" y1="80" x2="105" y2="82" stroke="#2a1a0a" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="115" y1="82" x2="126" y2="80" stroke="#2a1a0a" stroke-width="2" stroke-linecap="round"/>
-                        <!-- Smug mouth -->
-                        <path d="M 104 98 Q 110 104, 116 98" stroke="#2a1a0a" stroke-width="2" fill="none" stroke-linecap="round"/>
-                        <!-- Nose -->
-                        <ellipse cx="110" cy="94" rx="3" ry="2.5" fill="#E8A0A0"/>
-
-                        <!-- Teeth -->
-                        <rect x="107" y="99" width="3" height="4" rx="1" fill="white"/>
-                        <rect x="111" y="99" width="3" height="4" rx="1" fill="white"/>
-
-                        <!-- Arms hugging money bag -->
-                        <path d="M 78 125 Q 65 140, 80 155" stroke="#8B7355" stroke-width="10" fill="none" stroke-linecap="round"/>
-                        <path d="M 142 125 Q 155 140, 140 155" stroke="#8B7355" stroke-width="10" fill="none" stroke-linecap="round"/>
-
-                        <!-- Money bag -->
-                        <path d="M 90 170 Q 90 145, 110 140 Q 130 145, 130 170 Q 130 185, 110 188 Q 90 185, 90 170Z" fill="#5B8C3E"/>
-                        <!-- Money bag tie -->
-                        <path d="M 103 143 Q 110 135, 117 143" stroke="#3D6B28" stroke-width="3" fill="none" stroke-linecap="round"/>
-                        <ellipse cx="110" cy="145" rx="8" ry="4" fill="#3D6B28"/>
-                        <!-- Euro sign on bag -->
-                        <text x="110" y="172" font-family="Nunito, sans-serif" font-size="22" font-weight="800" fill="#FFD700" text-anchor="middle">&#8364;</text>
-
-                        <!-- Coins spilling -->
-                        <circle cx="75" cy="175" r="7" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
-                        <text x="75" y="179" font-size="9" font-weight="800" fill="#8B6914" text-anchor="middle">&#8364;</text>
-                        <circle cx="145" cy="178" r="6" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
-                        <text x="145" y="181" font-size="8" font-weight="800" fill="#8B6914" text-anchor="middle">&#8364;</text>
-                        <circle cx="85" cy="188" r="5" fill="#FFD700" stroke="#DAA520" stroke-width="1"/>
-
-                        <!-- Prohibition slash (on top of everything) -->
-                        <line x1="39" y1="181" x2="181" y2="39" stroke="#dc3232" stroke-width="8" stroke-linecap="round"/>
-                    </svg>
+                <div class="no-greed-img">
+                    <img src="fatgreedyrabbit.png" alt="No a las comisiones abusivas" loading="lazy">
                 </div>
                 <div class="no-greed-text">
                     <h2>¿Cansado de <span>comisiones abusivas</span>?</h2>
