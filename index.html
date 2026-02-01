@@ -251,6 +251,47 @@
             transform: translateY(-2px);
         }
 
+        /* ─── FREE BADGE ─── */
+        .free-badge {
+            position: relative;
+            display: inline-block;
+            margin-top: 1.5rem;
+            animation: badgePulse 2.5s ease-in-out infinite;
+        }
+
+        .free-badge-inner {
+            position: relative;
+            background: var(--gold);
+            color: var(--navy-dark);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 1.15rem;
+            text-align: center;
+            line-height: 1.3;
+            box-shadow: 0 4px 25px rgba(255, 183, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .free-badge-inner .badge-star {
+            font-size: 1.3rem;
+            margin: 0 0.3rem;
+        }
+
+        .free-badge-inner .badge-date {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-top: 0.15rem;
+            opacity: 0.85;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
         /* ─── STATS STRIP ─── */
         .stats {
             background: var(--gold);
@@ -854,6 +895,12 @@
                 <div class="hero-buttons">
                     <a href="#registro" class="btn-primary">Necesito ayuda</a>
                     <a href="#registro" class="btn-secondary">Quiero ayudar</a>
+                </div>
+                <div class="free-badge">
+                    <div class="free-badge-inner">
+                        <span class="badge-star">⭐</span> Gratis para todos hasta el 31 de julio 2026 <span class="badge-star">⭐</span>
+                        <span class="badge-date">¡Sin comisiones, sin letra pequeña!</span>
+                    </div>
                 </div>
             </div>
         </div>
