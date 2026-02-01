@@ -3,429 +3,1171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Manitas — Ayuda local entre vecinos</title>
-    <meta name="description" content="Conecta con vecinos que necesitan ayuda o ofrece tu tiempo cuando estés libre. Sin agencias, sin intermediarios.">
+    <title>MiManitas — Ayuda local de confianza</title>
+    <meta name="description" content="Encuentra ayuda de confianza cerca de ti o comparte tu tiempo cuando est&eacute;s libre. Pago seguro, sin agencias, sin comisiones ocultas.">
+    <meta property="og:title" content="MiManitas — Ayuda local de confianza">
+    <meta property="og:description" content="Tu comunidad de ayuda local en Alicante. Pago seguro con dep&oacute;sito, verificaci&oacute;n por tel&eacute;fono, y sin intermediarios.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mimanitas.me">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #FFFBF5;
-            --text: #1a1a1a;
-            --accent: #E86A33;
-            --accent-light: #FFF0E8;
-            --muted: #6B7280;
-            --card-bg: #FFFFFF;
-            --shadow: rgba(232, 106, 51, 0.1);
+            --navy: #1E3A5F;
+            --navy-dark: #152B47;
+            --navy-light: #2A4F7A;
+            --orange: #E85000;
+            --orange-dark: #C84400;
+            --orange-light: #FFF0E8;
+            --gold: #FFB700;
+            --gold-light: #FFF8E1;
+            --white: #FFFFFF;
+            --bg: #F8FAFC;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --card-shadow: 0 4px 24px rgba(30, 58, 95, 0.08);
+            --card-shadow-hover: 0 8px 40px rgba(30, 58, 95, 0.14);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--bg);
-            color: var(--text);
+            color: var(--text-dark);
             line-height: 1.6;
-            min-height: 100vh;
         }
 
-        /* Subtle animated background */
-        body::before {
-            content: '';
+        h1, h2, h3, h4 {
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* ─── HEADER ─── */
+        .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(ellipse at 20% 20%, rgba(232, 106, 51, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(232, 106, 51, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: -1;
+            z-index: 100;
+            padding: 1rem 0;
+            transition: background 0.3s, box-shadow 0.3s, padding 0.3s;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 2rem;
+        .header.scrolled {
+            background: var(--navy);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+            padding: 0.6rem 0;
         }
 
-        /* Header */
-        header {
-            padding: 1.5rem 0;
-            animation: fadeDown 0.6s ease-out;
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .logo {
-            font-family: 'Fraunces', serif;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--accent);
+        .logo-link {
+            display: flex;
+            align-items: center;
             text-decoration: none;
+        }
+
+        .logo-link svg {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .btn-cta-nav {
+            background: var(--orange);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .btn-cta-nav:hover {
+            background: var(--orange-dark);
+            transform: scale(1.03);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .mobile-menu-btn span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: white;
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        /* ─── HERO ─── */
+        .hero {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+            padding: 10rem 0 6rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 40%, rgba(232,80,0,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 60%, rgba(255,183,0,0.06) 0%, transparent 50%);
+            animation: heroFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes heroFloat {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-2%, 2%); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-logo {
+            margin-bottom: 2rem;
+        }
+
+        .hero-logo svg {
+            height: 70px;
+            width: auto;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            color: var(--white);
+            line-height: 1.15;
+            margin-bottom: 1.2rem;
+        }
+
+        .hero h1 .accent-gold {
+            color: var(--gold);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.75);
+            max-width: 580px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: var(--orange);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.2s;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .logo-icon {
-            font-size: 2rem;
+        .btn-primary:hover {
+            background: var(--orange-dark);
+            transform: translateY(-2px);
         }
 
-        /* Hero */
-        .hero {
-            padding: 4rem 0 5rem;
-            text-align: center;
-            animation: fadeUp 0.8s ease-out 0.2s both;
-        }
-
-        .hero h1 {
-            font-family: 'Fraunces', serif;
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            color: var(--text);
-        }
-
-        .hero h1 span {
-            color: var(--accent);
-            font-style: italic;
-        }
-
-        .hero p {
-            font-size: 1.25rem;
-            color: var(--muted);
-            max-width: 540px;
-            margin: 0 auto 2.5rem;
-        }
-
-        .badge {
-            display: inline-block;
-            background: var(--accent-light);
-            color: var(--accent);
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-bottom: 1.5rem;
-        }
-
-        /* How it works */
-        .how-it-works {
-            padding: 3rem 0;
-            animation: fadeUp 0.8s ease-out 0.4s both;
-        }
-
-        .how-it-works h2 {
-            font-family: 'Fraunces', serif;
-            font-size: 1.75rem;
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
-
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .step {
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 24px var(--shadow);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .step:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 32px var(--shadow);
-        }
-
-        .step-number {
-            width: 2.5rem;
-            height: 2.5rem;
-            background: var(--accent);
+        .btn-secondary {
+            background: transparent;
             color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .step h3 {
-            font-size: 1.125rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .step p {
-            color: var(--muted);
-            font-size: 0.95rem;
-        }
-
-        /* Signup form */
-        .signup {
-            background: var(--card-bg);
-            padding: 3rem;
-            border-radius: 1.5rem;
-            box-shadow: 0 4px 24px var(--shadow);
-            text-align: center;
-            margin: 3rem 0;
-            animation: fadeUp 0.8s ease-out 0.6s both;
-        }
-
-        .signup h2 {
-            font-family: 'Fraunces', serif;
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .signup p {
-            color: var(--muted);
-            margin-bottom: 1.5rem;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 0.75rem;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .form-row input {
-            flex: 1;
-            padding: 0.875rem 1.25rem;
-            border: 2px solid #E5E7EB;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-
-        .form-row input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .form-row button {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 0.875rem 1.5rem;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            font-family: inherit;
+            font-family: 'Nunito', sans-serif;
             cursor: pointer;
-            transition: background 0.2s, transform 0.2s;
+            text-decoration: none;
+            transition: border-color 0.2s, background 0.2s, transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .form-row button:hover {
-            background: #D45A28;
-            transform: scale(1.02);
+        .btn-secondary:hover {
+            border-color: var(--gold);
+            background: rgba(255,183,0,0.1);
+            transform: translateY(-2px);
         }
 
-        /* Features preview */
-        .features {
-            padding: 2rem 0 4rem;
-            animation: fadeUp 0.8s ease-out 0.8s both;
+        /* ─── STATS STRIP ─── */
+        .stats {
+            background: var(--gold);
+            padding: 1.5rem 0;
         }
 
-        .features h2 {
-            font-family: 'Fraunces', serif;
-            font-size: 1.75rem;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .feature-grid {
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 1rem;
+            text-align: center;
         }
 
-        .feature {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 1rem;
+        .stat-item {
+            color: var(--navy-dark);
         }
 
-        .feature-icon {
+        .stat-item .stat-icon {
             font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-
-        .feature span {
-            font-size: 0.95rem;
-            color: var(--muted);
-        }
-
-        .feature strong {
-            color: var(--text);
-            display: block;
             margin-bottom: 0.25rem;
         }
 
-        /* Footer */
-        footer {
+        .stat-item .stat-text {
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        /* ─── SECTION BASE ─── */
+        .section {
+            padding: 5rem 0;
+        }
+
+        .section-alt {
+            background: var(--white);
+        }
+
+        .section-title {
+            font-size: clamp(1.75rem, 3vw, 2.25rem);
+            font-weight: 800;
             text-align: center;
+            margin-bottom: 0.75rem;
+            color: var(--navy);
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 560px;
+            margin: 0 auto 3rem;
+        }
+
+        /* ─── HOW IT WORKS ─── */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .step-card {
+            background: var(--white);
             padding: 2rem;
-            color: var(--muted);
-            font-size: 0.875rem;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
         }
 
-        footer a {
-            color: var(--accent);
+        .step-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .step-num {
+            width: 3rem;
+            height: 3rem;
+            background: var(--orange);
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .step-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--navy);
+        }
+
+        .step-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* ─── TWO AUDIENCES ─── */
+        .audiences {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+            padding: 5rem 0;
+        }
+
+        .audiences .section-title {
+            color: var(--white);
+        }
+
+        .audiences .section-subtitle {
+            color: rgba(255,255,255,0.65);
+        }
+
+        .audience-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .audience-card {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            padding: 2.5rem;
+            transition: background 0.3s;
+        }
+
+        .audience-card:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .audience-card h3 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--gold);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .audience-card ul {
+            list-style: none;
+        }
+
+        .audience-card li {
+            color: rgba(255,255,255,0.8);
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.95rem;
+        }
+
+        .audience-card li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-weight: 700;
+        }
+
+        /* ─── FEATURES ─── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .feature-icon {
+            width: 3rem;
+            height: 3rem;
+            background: var(--orange-light);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 0.4rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* ─── TRUST ─── */
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .trust-item {
+            text-align: center;
+            padding: 2rem 1.5rem;
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .trust-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            background: var(--navy);
+            color: var(--gold);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .trust-item h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 0.4rem;
+        }
+
+        .trust-item p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* ─── SIGNUP ─── */
+        .signup {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+            padding: 5rem 0;
+        }
+
+        .signup-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            border-top: 4px solid var(--gold);
+        }
+
+        .signup-card h2 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--navy);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .signup-card > p {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.35rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 2px solid #E2E8F0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s;
+            background: var(--bg);
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--orange);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--orange);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--orange-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-status {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-status.success { color: #10B981; }
+        .form-status.error { color: #EF4444; }
+
+        /* ─── FAQ ─── */
+        .faq-list {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .faq-question {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 1.25rem 0;
+            text-align: left;
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .faq-question::after {
+            content: '+';
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: var(--orange);
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+
+        .faq-item.open .faq-question::after {
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .faq-item.open .faq-answer {
+            max-height: 200px;
+            padding-bottom: 1.25rem;
+        }
+
+        .faq-answer p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ─── FOOTER ─── */
+        .footer {
+            background: var(--navy-dark);
+            padding: 3rem 0 2rem;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .footer-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .footer-logo svg {
+            height: 32px;
+            width: auto;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: rgba(255,255,255,0.6);
             text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
         }
 
-        /* Animations */
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .footer-links a:hover {
+            color: var(--gold);
         }
 
-        @keyframes fadeDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .footer-bottom {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.85rem;
         }
 
-        /* Mobile adjustments */
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
+        /* ─── ANIMATIONS ─── */
+        .animate {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
 
-            .hero {
-                padding: 2rem 0 3rem;
-            }
+        .animate.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-            .signup {
-                padding: 2rem 1.5rem;
-            }
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .steps-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+            .audience-grid { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .trust-grid { grid-template-columns: repeat(2, 1fr); }
+        }
 
-            .form-row {
+        @media (max-width: 640px) {
+            .container { padding: 0 1.25rem; }
+            .hero { padding: 8rem 0 4rem; }
+            .section { padding: 3.5rem 0; }
+            .nav-links { display: none; }
+            .nav-links.open {
+                display: flex;
                 flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: var(--navy);
+                padding: 1.5rem 2rem;
+                gap: 1rem;
             }
-
-            .form-row button {
-                width: 100%;
-            }
+            .mobile-menu-btn { display: block; }
+            .features-grid { grid-template-columns: 1fr; }
+            .trust-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .signup-card { padding: 2rem 1.5rem; }
+            .footer-inner { flex-direction: column; text-align: center; }
+            .hero-buttons { flex-direction: column; align-items: center; }
+            .hero-buttons a { width: 100%; max-width: 280px; text-align: center; justify-content: center; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="/" class="logo">
-                <span class="logo-icon">🔧</span>
-                Mi Manitas
-            </a>
-        </header>
 
-        <main>
-            <section class="hero">
-                <div class="badge">🚀 Próximamente en Alicante</div>
-                <h1>Encuentra ayuda local.<br>Comparte tu <span>tiempo</span>.</h1>
-                <p>Conecta con vecinos que necesitan una mano — o ofrece tus habilidades cuando tengas tiempo libre. Sin agencias, sin intermediarios.</p>
-            </section>
+    <!-- ─── HEADER ─── -->
+    <header class="header" id="header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="/" class="logo-link">
+                    <svg viewBox="0 0 320 70" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="320" height="70" rx="12" fill="#1E3A5F"/>
+                        <g transform="translate(37, 7)">
+                            <svg viewBox="5 5 90 90" width="55" height="55">
+                                <circle cx="50" cy="40" r="19" fill="#E85000"/>
+                                <path d="M 22 63 Q 50 82, 78 63" stroke="#FFB700" stroke-width="10" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </g>
+                        <text x="94" y="47" font-family="Nunito, Arial, sans-serif" font-size="32" font-weight="800" letter-spacing="-0.5">
+                            <tspan fill="#E85000">Mi</tspan><tspan fill="#FFB700">Manitas</tspan>
+                        </text>
+                    </svg>
+                </a>
+                <nav>
+                    <ul class="nav-links" id="navLinks">
+                        <li><a href="#como-funciona">Como funciona</a></li>
+                        <li><a href="#caracteristicas">Caracteristicas</a></li>
+                        <li><a href="#confianza">Confianza</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="#registro" class="btn-cta-nav">Unete</a></li>
+                    </ul>
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+                        <span></span><span></span><span></span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-            <section class="how-it-works">
-                <h2>Cómo funciona</h2>
-                <div class="steps">
-                    <div class="step">
-                        <div class="step-number">1</div>
-                        <h3>Publica lo que necesitas</h3>
-                        <p>"Necesito ayuda para pintar mi valla este sábado" — pon tu precio o tarifa por hora.</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">2</div>
-                        <h3>O comparte tu tiempo</h3>
-                        <p>Muestra cuándo estás disponible. Deja que te encuentren cuando necesiten ayuda.</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-number">3</div>
-                        <h3>Conecta y listo</h3>
-                        <p>Mensajea, acuerda las condiciones, completa el trabajo. El pago se guarda seguro hasta que ambos estéis contentos.</p>
-                    </div>
+    <!-- ─── HERO ─── -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-logo">
+                    <svg viewBox="0 0 320 70" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="320" height="70" rx="12" fill="rgba(255,255,255,0.1)"/>
+                        <g transform="translate(37, 7)">
+                            <svg viewBox="5 5 90 90" width="55" height="55">
+                                <circle cx="50" cy="40" r="19" fill="#E85000"/>
+                                <path d="M 22 63 Q 50 82, 78 63" stroke="#FFB700" stroke-width="10" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </g>
+                        <text x="94" y="47" font-family="Nunito, Arial, sans-serif" font-size="32" font-weight="800" letter-spacing="-0.5">
+                            <tspan fill="#E85000">Mi</tspan><tspan fill="#FFB700">Manitas</tspan>
+                        </text>
+                    </svg>
                 </div>
-            </section>
+                <h1>Tu comunidad de<br><span class="accent-gold">ayuda local</span></h1>
+                <p>Encuentra ayuda de confianza cerca de ti — o comparte tu tiempo cuando estes libre. Sin agencias, sin comisiones abusivas.</p>
+                <div class="hero-buttons">
+                    <a href="#registro" class="btn-primary">Necesito ayuda</a>
+                    <a href="#registro" class="btn-secondary">Quiero ayudar</a>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <section class="signup">
-                <h2>Sé el primero en enterarte</h2>
-                <p>Lanzamos pronto. Únete a la lista de espera para acceso anticipado.</p>
-                <form class="form-row" action="#" method="post">
-                    <input type="email" placeholder="tu@email.com" required>
-                    <button type="submit">Avísame</button>
+    <!-- ─── STATS STRIP ─── -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-icon">🚀</div>
+                    <div class="stat-text">Lanzamiento Q2 2026</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">📍</div>
+                    <div class="stat-text">Empezamos en Alicante</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">🔒</div>
+                    <div class="stat-text">Pago 100% seguro</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-text">Sin comisiones ocultas</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── HOW IT WORKS ─── -->
+    <section class="section" id="como-funciona">
+        <div class="container">
+            <h2 class="section-title animate">Como funciona</h2>
+            <p class="section-subtitle animate">Tres pasos sencillos para conectar con ayuda local</p>
+            <div class="steps-grid">
+                <div class="step-card animate">
+                    <div class="step-num">1</div>
+                    <h3>Publica lo que necesitas</h3>
+                    <p>"Necesito ayuda para pintar mi valla este sabado" — pon tu precio o tarifa por hora.</p>
+                </div>
+                <div class="step-card animate">
+                    <div class="step-num">2</div>
+                    <h3>O comparte tu tiempo</h3>
+                    <p>Muestra cuando estas disponible. Deja que te encuentren cuando necesiten una mano.</p>
+                </div>
+                <div class="step-card animate">
+                    <div class="step-num">3</div>
+                    <h3>Conecta y listo</h3>
+                    <p>Mensajea, acuerda las condiciones, completa el trabajo. El pago se guarda seguro hasta que ambos esteis contentos.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── TWO AUDIENCES ─── -->
+    <section class="audiences" id="para-quien">
+        <div class="container">
+            <h2 class="section-title animate">Hecho para todos</h2>
+            <p class="section-subtitle animate">Tanto si buscas ayuda como si la ofreces, MiManitas funciona para ti</p>
+            <div class="audience-grid">
+                <div class="audience-card animate">
+                    <h3>🔍 Necesitas ayuda?</h3>
+                    <ul>
+                        <li>Publica un trabajo en minutos</li>
+                        <li>Recibe solicitudes de gente verificada</li>
+                        <li>Tu pago esta protegido hasta que estes satisfecho</li>
+                        <li>Valora al ayudante cuando termine</li>
+                        <li>Garantia de satisfaccion de 7 dias</li>
+                    </ul>
+                </div>
+                <div class="audience-card animate">
+                    <h3>🛠️ Quieres ayudar?</h3>
+                    <ul>
+                        <li>Marca cuando estas disponible en tu calendario</li>
+                        <li>Recibe alertas de trabajos cerca de ti</li>
+                        <li>Cobra de forma segura — sin perseguir pagos</li>
+                        <li>Construye tu reputacion con valoraciones</li>
+                        <li>Tu decides cuando y cuanto trabajas</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── FEATURES ─── -->
+    <section class="section section-alt" id="caracteristicas">
+        <div class="container">
+            <h2 class="section-title animate">Que hace diferente a MiManitas?</h2>
+            <p class="section-subtitle animate">Diseñado para que confies desde el primer momento</p>
+            <div class="features-grid">
+                <div class="feature-card animate">
+                    <div class="feature-icon">💳</div>
+                    <h3>Pago en deposito</h3>
+                    <p>El dinero se guarda seguro hasta que el trabajo esta bien hecho. Ambas partes protegidas.</p>
+                </div>
+                <div class="feature-card animate">
+                    <div class="feature-icon">📅</div>
+                    <h3>Calendario de disponibilidad</h3>
+                    <p>Los ayudantes marcan cuando estan libres. Tu buscas y reservas. Sin idas y venidas.</p>
+                </div>
+                <div class="feature-card animate">
+                    <div class="feature-icon">💬</div>
+                    <h3>Mensajeria en la app</h3>
+                    <p>Coordina sin compartir tu numero personal. Notificaciones en tiempo real.</p>
+                </div>
+                <div class="feature-card animate">
+                    <div class="feature-icon">📱</div>
+                    <h3>Verificacion por telefono</h3>
+                    <p>Cada usuario se verifica por SMS. Una comunidad de confianza desde el principio.</p>
+                </div>
+                <div class="feature-card animate">
+                    <div class="feature-icon">📍</div>
+                    <h3>100% local</h3>
+                    <p>Hecho para tu barrio, no un marketplace global sin alma. Empezamos en Alicante.</p>
+                </div>
+                <div class="feature-card animate">
+                    <div class="feature-icon">🏷️</div>
+                    <h3>Precios transparentes</h3>
+                    <p>Tu pones el precio. Sin sorpresas, sin comisiones ocultas que inflan el coste.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── TRUST ─── -->
+    <section class="section" id="confianza">
+        <div class="container">
+            <h2 class="section-title animate">Tu seguridad es lo primero</h2>
+            <p class="section-subtitle animate">Cada detalle pensado para protegerte</p>
+            <div class="trust-grid">
+                <div class="trust-item animate">
+                    <div class="trust-icon">🛡️</div>
+                    <h4>Deposito seguro</h4>
+                    <p>El pago se retiene hasta que confirmas que el trabajo esta bien hecho.</p>
+                </div>
+                <div class="trust-item animate">
+                    <div class="trust-icon">✅</div>
+                    <h4>Usuarios verificados</h4>
+                    <p>Verificacion por SMS para toda la comunidad.</p>
+                </div>
+                <div class="trust-item animate">
+                    <div class="trust-icon">⭐</div>
+                    <h4>Garantia 7 dias</h4>
+                    <p>Si no estas satisfecho, tienes 7 dias para reclamar.</p>
+                </div>
+                <div class="trust-item animate">
+                    <div class="trust-icon">🔐</div>
+                    <h4>Cumplimiento legal</h4>
+                    <p>GDPR, ley laboral española y reporting DAC7 desde el dia uno.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── SIGNUP ─── -->
+    <section class="signup" id="registro">
+        <div class="container">
+            <div class="signup-card animate">
+                <h2>Se el primero en enterarte</h2>
+                <p>Lanzamos pronto en Alicante. Dejanos tus datos y te avisamos cuando estemos listos.</p>
+                <form id="waitlistForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Tu nombre</label>
+                            <input type="text" id="name" name="name" placeholder="Ej. Maria" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Tu email</label>
+                            <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Algo que quieras contarnos? (opcional)</label>
+                        <textarea id="message" name="message" placeholder="Ej. Busco ayuda para jardineria, o quiero ofrecer mis servicios de pintura..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit" id="submitBtn">Quiero acceso anticipado</button>
+                    <div class="form-status" id="formStatus"></div>
                 </form>
-            </section>
+            </div>
+        </div>
+    </section>
 
-            <section class="features">
-                <h2>¿Qué hace diferente a Mi Manitas?</h2>
-                <div class="feature-grid">
-                    <div class="feature">
-                        <span class="feature-icon">📅</span>
-                        <span><strong>Horarios flexibles</strong>Muestra tu disponibilidad real. Perfecto para trabajadores por turnos y estudiantes.</span>
-                    </div>
-                    <div class="feature">
-                        <span class="feature-icon">🔒</span>
-                        <span><strong>Pago seguro</strong>El dinero se guarda en depósito hasta que el trabajo esté bien hecho.</span>
-                    </div>
-                    <div class="feature">
-                        <span class="feature-icon">📍</span>
-                        <span><strong>Hiperlocal</strong>Hecho para tu barrio, no un marketplace global sin alma.</span>
-                    </div>
-                    <div class="feature">
-                        <span class="feature-icon">🚗</span>
-                        <span><strong>Opción de recogida</strong>Los manitas pueden ofrecerte recogerte si estás a las afueras.</span>
+    <!-- ─── FAQ ─── -->
+    <section class="section section-alt" id="faq">
+        <div class="container">
+            <h2 class="section-title animate">Preguntas frecuentes</h2>
+            <p class="section-subtitle animate">Todo lo que necesitas saber antes de empezar</p>
+            <div class="faq-list">
+                <div class="faq-item animate">
+                    <button class="faq-question">Es gratis registrarse?</button>
+                    <div class="faq-answer">
+                        <p>Si, crear tu cuenta y publicar trabajos o marcar tu disponibilidad es completamente gratis. Solo cobramos una pequeña comision cuando se completa un trabajo con exito.</p>
                     </div>
                 </div>
-            </section>
-        </main>
+                <div class="faq-item animate">
+                    <button class="faq-question">Como funciona el pago seguro?</button>
+                    <div class="faq-answer">
+                        <p>Cuando contratas a alguien, tu pago se guarda en deposito (escrow) mediante Stripe. El ayudante recibe el dinero solo cuando tu confirmas que el trabajo esta bien hecho. Si hay algun problema, tienes 7 dias para reclamar.</p>
+                    </div>
+                </div>
+                <div class="faq-item animate">
+                    <button class="faq-question">Donde estais disponibles?</button>
+                    <div class="faq-answer">
+                        <p>Empezamos en Alicante y alrededores. Nuestro plan es expandirnos a toda España en la segunda mitad de 2026, y despues a otros paises.</p>
+                    </div>
+                </div>
+                <div class="faq-item animate">
+                    <button class="faq-question">Que tipo de trabajos puedo publicar?</button>
+                    <div class="faq-answer">
+                        <p>Cualquier tarea del hogar o trabajo manual: pintura, jardineria, mudanzas, montaje de muebles, limpieza, reparaciones... Si necesitas un par de manos extra, MiManitas es para ti.</p>
+                    </div>
+                </div>
+                <div class="faq-item animate">
+                    <button class="faq-question">Como se que los ayudantes son de confianza?</button>
+                    <div class="faq-answer">
+                        <p>Todos los usuarios se verifican por telefono mediante SMS. Ademas, cada trabajo completado genera valoraciones publicas que ayudan a construir una reputacion transparente.</p>
+                    </div>
+                </div>
+                <div class="faq-item animate">
+                    <button class="faq-question">Puedo usar MiManitas en el movil?</button>
+                    <div class="faq-answer">
+                        <p>MiManitas funciona en cualquier navegador — movil, tablet o escritorio. Las apps nativas para Android e iOS llegaran poco despues del lanzamiento web.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-        <footer>
-            <p>Hecho con 🔧 en Alicante · <a href="mailto:hola@mimanitas.me">hola@mimanitas.me</a></p>
-        </footer>
-    </div>
+    <!-- ─── FOOTER ─── -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-inner">
+                <a href="/" class="footer-logo">
+                    <svg viewBox="0 0 320 70" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="320" height="70" rx="12" fill="rgba(255,255,255,0.08)"/>
+                        <g transform="translate(37, 7)">
+                            <svg viewBox="5 5 90 90" width="55" height="55">
+                                <circle cx="50" cy="40" r="19" fill="#E85000"/>
+                                <path d="M 22 63 Q 50 82, 78 63" stroke="#FFB700" stroke-width="10" fill="none" stroke-linecap="round"/>
+                            </svg>
+                        </g>
+                        <text x="94" y="47" font-family="Nunito, Arial, sans-serif" font-size="32" font-weight="800" letter-spacing="-0.5">
+                            <tspan fill="#E85000">Mi</tspan><tspan fill="#FFB700">Manitas</tspan>
+                        </text>
+                    </svg>
+                </a>
+                <ul class="footer-links">
+                    <li><a href="mailto:hola@mimanitas.me">hola@mimanitas.me</a></li>
+                    <li><a href="https://www.ward.no" target="_blank">ward.no</a></li>
+                </ul>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 MiManitas. Hecho con ❤️ en Alicante.</p>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        // Simple form handling - replace with real backend later
-        document.querySelector('form').addEventListener('submit', function(e) {
+        // ─── HEADER SCROLL EFFECT ───
+        const header = document.getElementById('header');
+        window.addEventListener('scroll', () => {
+            header.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // ─── MOBILE MENU ───
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const navLinks = document.getElementById('navLinks');
+        mobileBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('open');
+        });
+        // Close mobile menu on link click
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => navLinks.classList.remove('open'));
+        });
+
+        // ─── SCROLL ANIMATIONS ───
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 80);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.animate').forEach(el => observer.observe(el));
+
+        // ─── FAQ ACCORDION ───
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const wasOpen = item.classList.contains('open');
+                // Close all
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                // Toggle current
+                if (!wasOpen) item.classList.add('open');
+            });
+        });
+
+        // ─── WAITLIST FORM (Web3Forms) ───
+        const form = document.getElementById('waitlistForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const formStatus = document.getElementById('formStatus');
+
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = this.querySelector('input').value;
-            const button = this.querySelector('button');
-            
-            button.textContent = '¡Apuntado! ✓';
-            button.style.background = '#10B981';
-            
-            // In reality, you'd send this to Supabase or similar
-            console.log('Email signup:', email);
-            
-            setTimeout(() => {
-                button.textContent = 'Avísame';
-                button.style.background = '';
-                this.querySelector('input').value = '';
-            }, 2000);
+
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const message = document.getElementById('message').value.trim();
+
+            if (!name || !email) {
+                formStatus.textContent = 'Por favor, rellena tu nombre y email.';
+                formStatus.className = 'form-status error';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+            formStatus.textContent = '';
+
+            try {
+                const response = await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        access_key: '8208d255-4d2e-48eb-b383-76acb411bd72',
+                        name: name,
+                        email: email,
+                        message: message || '(Sin mensaje)',
+                        subject: 'Nueva inscripcion lista de espera — MiManitas',
+                        from_name: 'MiManitas Waitlist',
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    formStatus.textContent = 'Apuntado! Te avisaremos cuando estemos listos.';
+                    formStatus.className = 'form-status success';
+                    form.reset();
+                } else {
+                    formStatus.textContent = 'Algo ha fallado. Intentalo de nuevo.';
+                    formStatus.className = 'form-status error';
+                }
+            } catch (err) {
+                formStatus.textContent = 'No se pudo enviar. Intentalo mas tarde.';
+                formStatus.className = 'form-status error';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Quiero acceso anticipado';
+            }
         });
     </script>
 </body>
