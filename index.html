@@ -164,7 +164,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             opacity: 0;
             transition: opacity 2s ease-in-out;
             will-change: opacity;
@@ -180,7 +180,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(30, 58, 95, 0.82) 0%, rgba(21, 43, 71, 0.88) 100%);
+            background: linear-gradient(135deg, rgba(30, 58, 95, 0.45) 0%, rgba(21, 43, 71, 0.55) 100%);
             z-index: 1;
         }
 
@@ -204,6 +204,7 @@
             color: var(--white);
             line-height: 1.15;
             margin-bottom: 1.2rem;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
         }
 
         .hero h1 .accent-gold {
@@ -212,9 +213,10 @@
 
         .hero p {
             font-size: 1.2rem;
-            color: rgba(255,255,255,0.75);
+            color: rgba(255,255,255,0.9);
             max-width: 580px;
             margin: 0 auto 2.5rem;
+            text-shadow: 0 1px 8px rgba(0,0,0,0.4);
         }
 
         .hero-buttons {
