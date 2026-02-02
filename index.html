@@ -142,33 +142,51 @@
 
         /* ─── HERO ─── */
         .hero {
-            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+            background: var(--navy-dark);
             padding: 10rem 0 6rem;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
 
-        .hero::before {
-            content: '';
+        .hero-slideshow {
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 40%, rgba(232,80,0,0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 60%, rgba(255,183,0,0.06) 0%, transparent 50%);
-            animation: heroFloat 20s ease-in-out infinite;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
         }
 
-        @keyframes heroFloat {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(-2%, 2%); }
+        .hero-slideshow img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+            will-change: opacity;
+        }
+
+        .hero-slideshow img.active {
+            opacity: 1;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(30, 58, 95, 0.82) 0%, rgba(21, 43, 71, 0.88) 100%);
+            z-index: 1;
         }
 
         .hero-content {
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .hero-logo {
@@ -997,6 +1015,14 @@
 
     <!-- ─── HERO ─── -->
     <section class="hero">
+        <div class="hero-slideshow" id="heroSlideshow">
+            <img src="images/lawnmower-villa.webp" alt="" class="active" loading="eager">
+            <img src="images/handyman-shutters.webp" alt="" loading="lazy">
+            <img src="images/gardener-oranges.webp" alt="" loading="lazy">
+            <img src="images/painter-terracotta.webp" alt="" loading="lazy">
+            <img src="images/neighbor-greeting.webp" alt="" loading="lazy">
+        </div>
+        <div class="hero-overlay"></div>
         <div class="container">
             <div class="hero-content">
                 <div class="hero-logo">
@@ -1336,6 +1362,17 @@
     </footer>
 
     <script>
+        // ─── HERO SLIDESHOW ───
+        (function() {
+            const slides = document.querySelectorAll('#heroSlideshow img');
+            let current = 0;
+            setInterval(() => {
+                slides[current].classList.remove('active');
+                current = (current + 1) % slides.length;
+                slides[current].classList.add('active');
+            }, 5000);
+        })();
+
         // ─── HEADER SCROLL EFFECT ───
         const header = document.getElementById('header');
         window.addEventListener('scroll', () => {
