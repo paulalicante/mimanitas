@@ -381,7 +381,11 @@ CREATE POLICY "Transaction participants can view"
 -- Function to create profile on signup
 -- Expects user_type to be passed in raw_user_meta_data during signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, name, user_type)
   VALUES (
@@ -392,7 +396,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger to auto-create profile
 CREATE TRIGGER on_auth_user_created

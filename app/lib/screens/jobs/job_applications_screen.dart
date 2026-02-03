@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../main.dart';
+import '../../services/payment_service.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String jobId;
   final String jobTitle;
+  final double jobPrice;
 
   const JobApplicationsScreen({
     super.key,
     required this.jobId,
     required this.jobTitle,
+    this.jobPrice = 0,
   });
 
   @override
@@ -62,6 +66,11 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
 
   Future<void> _acceptApplication(String applicationId, String helperId) async {
     try {
+      print('=== DEBUG: ACCEPTING APPLICATION WITH STRIPE CHECKOUT ===');
+      print('DEBUG: Application ID: $applicationId');
+      print('DEBUG: Helper ID: $helperId');
+      print('DEBUG: Job ID: ${widget.jobId}');
+
       // Show loading
       showDialog(
         context: context,
@@ -73,49 +82,76 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ),
       );
 
-      // Accept the application
-      await supabase
-          .from('applications')
-          .update({'status': 'accepted'})
-          .eq('id', applicationId);
+      // Create checkout session
+      // URLs for Stripe redirect - in production, use deep links
+      const baseUrl = 'https://mimanitas.me';
+      final successUrl = '$baseUrl/payment-success?job_id=${widget.jobId}&application_id=$applicationId';
+      final cancelUrl = '$baseUrl/payment-cancelled?job_id=${widget.jobId}';
 
-      // Update job status to assigned and set the helper
-      await supabase
-          .from('jobs')
-          .update({
-            'status': 'assigned',
-            'assigned_to': helperId,
-          })
-          .eq('id', widget.jobId);
-
-      // Reject all other applications for this job
-      await supabase
-          .from('applications')
-          .update({'status': 'rejected'})
-          .eq('job_id', widget.jobId)
-          .neq('id', applicationId);
+      final checkoutResult = await paymentService.createCheckoutSession(
+        jobId: widget.jobId,
+        applicationId: applicationId,
+        successUrl: successUrl,
+        cancelUrl: cancelUrl,
+      );
 
       // Close loading dialog
       if (mounted) Navigator.of(context).pop();
 
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Aplicación aceptada! El trabajo ha sido asignado.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (!checkoutResult.success) {
+        // Check if helper needs to set up their account
+        if (checkoutResult.helperNeedsOnboarding) {
+          if (mounted) {
+            _showHelperNeedsSetupDialog(helperId);
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(checkoutResult.error ?? 'Error al crear el pago'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+        return;
       }
 
-      // Reload applications
-      await _loadApplications();
+      // Show payment confirmation dialog with redirect info
+      if (mounted) {
+        final confirmed = await _showPaymentConfirmation(checkoutResult);
+        if (confirmed != true) return;
+      }
 
-      // Go back to my jobs screen
-      if (mounted) Navigator.of(context).pop();
+      // Open Stripe Checkout in browser
+      if (checkoutResult.checkoutUrl != null) {
+        final uri = Uri.parse(checkoutResult.checkoutUrl!);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+          // Show verification dialog when user returns
+          if (mounted && checkoutResult.sessionId != null) {
+            await _showPaymentVerificationDialog(
+              checkoutResult.sessionId!,
+              applicationId,
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No se pudo abrir la página de pago'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
     } catch (e) {
-      // Close loading dialog
-      if (mounted) Navigator.of(context).pop();
+      // Close any open dialogs
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/job-applications');
+      }
 
       print('Error accepting application: $e');
       if (mounted) {
@@ -127,6 +163,251 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         );
       }
     }
+  }
+
+  Future<void> _showPaymentVerificationDialog(String sessionId, String applicationId) async {
+    if (!mounted) return;
+
+    // Show auto-verifying dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFFE86A33)),
+            SizedBox(height: 16),
+            Text(
+              'Verificando pago...',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Esto puede tardar unos segundos.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // Poll for payment completion (webhook may need a moment to process)
+    PaymentConfirmResult? verifyResult;
+    for (int attempt = 0; attempt < 8; attempt++) {
+      // Wait before each attempt (3s intervals, first attempt after 2s)
+      await Future.delayed(Duration(seconds: attempt == 0 ? 2 : 3));
+      if (!mounted) return;
+
+      verifyResult = await paymentService.verifyCheckout(sessionId: sessionId);
+      if (verifyResult.success) break;
+    }
+
+    // Close loading dialog
+    if (mounted) Navigator.of(context).pop();
+
+    if (verifyResult?.success == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(verifyResult!.message ?? '¡Pago completado! Trabajo asignado.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadApplications();
+      }
+    } else {
+      // Payment not yet confirmed — might still complete via webhook
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo verificar el pago. Si has pagado, el estado se actualizará en breve.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+        await _loadApplications();
+      }
+    }
+  }
+
+  void _showHelperNeedsSetupDialog(String helperId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.account_balance_wallet_outlined, color: Colors.orange[700]),
+            const SizedBox(width: 12),
+            const Text('Cuenta no configurada'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Este helper aún no ha configurado su cuenta para recibir pagos.',
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lightbulb_outline, color: Colors.blue, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Envíale un mensaje para avisarle que quieres contratarle. '
+                      'La configuración solo tarda 3 minutos.',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: Navigate to chat with helper
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usa Mensajes para contactar con el helper'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE86A33),
+            ),
+            icon: const Icon(Icons.message, size: 18),
+            label: const Text('Enviar mensaje'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showPaymentConfirmation(CheckoutSessionResult checkoutResult) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar pago'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Resumen del pago:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildPaymentRow('Trabajo', checkoutResult.formattedJobAmount),
+            _buildPaymentRow('Comisión plataforma (10%)', checkoutResult.formattedFee),
+            const Divider(),
+            _buildPaymentRow('Total', checkoutResult.formattedTotal, bold: true),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Serás redirigido a Stripe para completar el pago de forma segura.',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock, color: Colors.green, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'El dinero se guardará en depósito hasta que marques el trabajo como completado.',
+                      style: TextStyle(
+                        color: Colors.green[800],
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE86A33),
+            ),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: Text('Pagar ${checkoutResult.formattedTotal}'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentRow(String label, String amount, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          Text(
+            amount,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+              color: bold ? const Color(0xFFE86A33) : null,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _rejectApplication(String applicationId) async {
@@ -160,12 +441,17 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   }
 
   void _showAcceptConfirmation(String applicationId, String helperId, String helperName) {
+    final priceText = widget.jobPrice > 0
+        ? '\n\nSe te pedirá pagar €${widget.jobPrice.toStringAsFixed(2)} + 10% comisión.'
+        : '';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Aceptar aplicación'),
         content: Text(
-          '¿Quieres aceptar a $helperName para este trabajo?\n\n'
+          '¿Quieres aceptar a $helperName para este trabajo?'
+          '$priceText\n\n'
           'Esto asignará el trabajo a $helperName y rechazará automáticamente las demás aplicaciones.',
         ),
         actions: [
@@ -181,7 +467,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE86A33),
             ),
-            child: const Text('Aceptar'),
+            child: const Text('Continuar'),
           ),
         ],
       ),

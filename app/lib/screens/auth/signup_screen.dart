@@ -19,6 +19,8 @@ class _SignupScreenState extends State<SignupScreen> {
   String? _errorMessage;
   String? _successMessage;
   String _selectedUserType = 'helper'; // Default to helper
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -48,10 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
-      print('DEBUG SIGNUP: Selected user type = $_selectedUserType');
-      print('DEBUG SIGNUP: Sending data: name=${_nameController.text.trim()}, user_type=$_selectedUserType');
-
-      await supabase.auth.signUp(
+      final response = await supabase.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         data: {
@@ -60,18 +59,33 @@ class _SignupScreenState extends State<SignupScreen> {
         },
       );
 
-      print('DEBUG SIGNUP: Signup completed');
-
       final String userTypeSpanish = _selectedUserType == 'helper' ? 'HELPER (Quiero ayudar)' : 'SEEKER (Necesito ayuda)';
 
-      if (mounted) {
-        setState(() {
-          _successMessage =
-              '¡Cuenta creada como: $userTypeSpanish!\n\nPuedes iniciar sesión ahora.';
-        });
+      // Check if email confirmation is needed (session is null but user exists)
+      if (response.session == null && response.user != null) {
+        // Supabase requires email confirmation
+        if (mounted) {
+          setState(() {
+            _successMessage =
+                '¡Cuenta creada como: $userTypeSpanish!\n\nRevisa tu email (${_emailController.text.trim()}) para confirmar tu cuenta antes de iniciar sesión.';
+          });
 
-        // Wait 5 seconds then go back to login
-        await Future.delayed(const Duration(seconds: 5));
+          await Future.delayed(const Duration(seconds: 8));
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      } else if (response.user == null) {
+        // Possible fake success (email already exists with confirmation pending)
+        if (mounted) {
+          setState(() {
+            _errorMessage =
+                'No se pudo crear la cuenta. Es posible que este email ya esté registrado. Revisa tu email por si tienes un enlace de confirmación pendiente.';
+          });
+        }
+      } else {
+        // Signup succeeded with auto-confirm (session exists)
+        // Pop back to AuthGate which will redirect to HomeScreen
         if (mounted) {
           Navigator.of(context).pop();
         }
@@ -82,7 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
       });
     } catch (error) {
       setState(() {
-        _errorMessage = 'Ocurrió un error inesperado. Inténtalo de nuevo.';
+        _errorMessage = 'Error inesperado. Inténtalo de nuevo.';
       });
     } finally {
       if (mounted) {
@@ -164,10 +178,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Helper option
                 GestureDetector(
                   onTap: () {
-                    print('DEBUG: HELPER button tapped!');
                     setState(() {
                       _selectedUserType = 'helper';
-                      print('DEBUG: Set _selectedUserType to helper');
                     });
                   },
                   child: Container(
@@ -244,10 +256,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 // Seeker option
                 GestureDetector(
                   onTap: () {
-                    print('DEBUG: SEEKER button tapped!');
                     setState(() {
                       _selectedUserType = 'seeker';
-                      print('DEBUG: Set _selectedUserType to seeker');
                     });
                   },
                   child: Container(
@@ -410,7 +420,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       // Password field
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           hintText: 'Mínimo 6 caracteres',
@@ -418,6 +428,16 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           prefixIcon: const Icon(Icons.lock_outlined),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -434,13 +454,23 @@ class _SignupScreenState extends State<SignupScreen> {
                       // Confirm password field
                       TextFormField(
                         controller: _confirmPasswordController,
-                        obscureText: true,
+                        obscureText: _obscureConfirmPassword,
                         decoration: InputDecoration(
                           labelText: 'Confirmar contraseña',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           prefixIcon: const Icon(Icons.lock_outlined),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../main.dart';
+import '../../widgets/places_autocomplete_field.dart';
 import '../auth/phone_verification_screen.dart';
 
 class PostJobScreen extends StatefulWidget {
@@ -14,7 +15,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _locationController = TextEditingController();
   final _priceController = TextEditingController();
 
   bool _isLoading = false;
@@ -23,18 +23,48 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String? _selectedSkill;
   List<Map<String, dynamic>> _skills = [];
 
+  // Location from Places autocomplete
+  String? _selectedAddress;
+  double? _selectedLat;
+  double? _selectedLng;
+  String? _selectedBarrio;
+
+  // Saved addresses
+  List<Map<String, dynamic>> _savedLocations = [];
+  String? _selectedSavedLocationId; // null = using autocomplete (new address)
+  bool _showAutocomplete = true; // false when a saved address chip is selected
+  bool _saveNewAddress = false;
+  final _saveAddressLabelController = TextEditingController();
+
+  // Scheduling
+  bool _isFlexible = false;
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  int? _estimatedDuration; // in minutes
+
+  static const List<Map<String, dynamic>> _durationOptions = [
+    {'label': '30 min', 'value': 30},
+    {'label': '1 hora', 'value': 60},
+    {'label': '2 horas', 'value': 120},
+    {'label': '3 horas', 'value': 180},
+    {'label': '4 horas', 'value': 240},
+    {'label': 'Medio dia', 'value': 360},
+    {'label': 'Dia completo', 'value': 480},
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadSkills();
+    _loadSavedLocations();
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _locationController.dispose();
     _priceController.dispose();
+    _saveAddressLabelController.dispose();
     super.dispose();
   }
 
@@ -46,6 +76,100 @@ class _PostJobScreenState extends State<PostJobScreen> {
       });
     } catch (e) {
       print('Error loading skills: $e');
+    }
+  }
+
+  Future<void> _loadSavedLocations() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('saved_locations')
+          .select()
+          .eq('user_id', user.id)
+          .order('is_default', ascending: false)
+          .order('updated_at', ascending: false);
+      setState(() {
+        _savedLocations = List<Map<String, dynamic>>.from(data);
+        // If there are saved locations, start with the default selected
+        if (_savedLocations.isNotEmpty) {
+          _showAutocomplete = false;
+          final defaultLoc = _savedLocations.first;
+          _selectSavedLocation(defaultLoc);
+        }
+      });
+    } catch (e) {
+      // Table may not exist yet — ignore silently
+      print('Error loading saved locations: $e');
+    }
+  }
+
+  void _selectSavedLocation(Map<String, dynamic> location) {
+    setState(() {
+      _selectedSavedLocationId = location['id'] as String;
+      _selectedAddress = location['address'] as String?;
+      _selectedLat = (location['location_lat'] as num?)?.toDouble();
+      _selectedLng = (location['location_lng'] as num?)?.toDouble();
+      _selectedBarrio = location['barrio'] as String?;
+      _showAutocomplete = false;
+      _saveNewAddress = false;
+    });
+  }
+
+  void _useNewAddress() {
+    setState(() {
+      _selectedSavedLocationId = null;
+      _selectedAddress = null;
+      _selectedLat = null;
+      _selectedLng = null;
+      _selectedBarrio = null;
+      _showAutocomplete = true;
+      _saveNewAddress = false;
+      _saveAddressLabelController.clear();
+    });
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 90)),
+      locale: const Locale('es', 'ES'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFE86A33),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (date != null) {
+      setState(() => _selectedDate = date);
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? const TimeOfDay(hour: 10, minute: 0),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFE86A33),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (time != null) {
+      setState(() => _selectedTime = time);
     }
   }
 
@@ -61,6 +185,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
       return;
     }
 
+    if (_selectedLat == null || _selectedLng == null) {
+      setState(() {
+        _errorMessage = 'Por favor selecciona una direccion del listado';
+      });
+      return;
+    }
+
     // Check if profile is complete
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -68,18 +199,44 @@ class _PostJobScreenState extends State<PostJobScreen> {
     try {
       final profile = await supabase
           .from('profiles')
-          .select('phone')
+          .select('phone, phone_verified')
           .eq('id', user.id)
           .single();
 
       final phone = profile['phone'] as String?;
+      final phoneVerified = profile['phone_verified'] as bool? ?? false;
 
       if (phone == null || phone.isEmpty) {
         _showProfileIncompleteDialog();
         return;
       }
 
-      // Profile is complete, proceed with job posting
+      // Check if phone needs verification
+      if (!phoneVerified) {
+        if (!mounted) return;
+
+        final verified = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhoneVerificationScreen(
+              phoneNumber: phone,
+              onVerified: () {},
+            ),
+          ),
+        );
+
+        if (verified == true && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Telefono verificado'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _postJob();
+        }
+        return;
+      }
+
       await _postJob();
     } catch (e) {
       print('Error checking profile: $e');
@@ -99,7 +256,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Para publicar trabajos necesitas añadir tu número de teléfono.',
+              'Para publicar trabajos necesitas anadir tu numero de telefono.',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
             SizedBox(height: 12),
@@ -123,7 +280,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               backgroundColor: const Color(0xFFE86A33),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Añadir teléfono'),
+            child: const Text('Anadir telefono'),
           ),
         ],
       ),
@@ -137,26 +294,25 @@ class _PostJobScreenState extends State<PostJobScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Añadir teléfono'),
+        title: const Text('Anadir telefono'),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: phoneController,
             decoration: const InputDecoration(
-              labelText: 'Teléfono',
+              labelText: 'Telefono',
               hintText: '+34 600 000 000',
               border: OutlineInputBorder(),
             ),
             keyboardType: TextInputType.phone,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Ingresa tu teléfono';
+                return 'Ingresa tu telefono';
               }
-              // Spanish phone format: +34 followed by 9 digits, or just 9 digits
               final phoneRegex = RegExp(r'^(\+34|0034)?[6-9]\d{8}$');
               final cleaned = value.replaceAll(RegExp(r'\s+'), '');
               if (!phoneRegex.hasMatch(cleaned)) {
-                return 'Formato inválido (ej: +34 600 000 000)';
+                return 'Formato invalido (ej: +34 600 000 000)';
               }
               return null;
             },
@@ -179,21 +335,17 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
                 await supabase
                     .from('profiles')
-                    .update({'phone': phoneNumber})
-                    .eq('id', user.id);
+                    .update({'phone': phoneNumber}).eq('id', user.id);
 
                 if (context.mounted) {
                   Navigator.pop(context);
 
-                  // Navigate to phone verification screen
                   final verified = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
                       builder: (context) => PhoneVerificationScreen(
                         phoneNumber: phoneNumber,
-                        onVerified: () {
-                          // Phone verified successfully
-                        },
+                        onVerified: () {},
                       ),
                     ),
                   );
@@ -201,11 +353,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   if (verified == true && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Teléfono verificado'),
+                        content: Text('Telefono verificado'),
                         backgroundColor: Colors.green,
                       ),
                     );
-                    // Now post the job
                     await _postJob();
                   }
                 }
@@ -231,6 +382,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
     );
   }
 
+  String? _formatTimeForDb(TimeOfDay? time) {
+    if (time == null) return null;
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
+  }
+
   Future<void> _postJob() async {
     setState(() {
       _isLoading = true;
@@ -243,24 +399,50 @@ class _PostJobScreenState extends State<PostJobScreen> {
         throw Exception('No user logged in');
       }
 
-      print('DEBUG: Submitting job with data:');
-      print('  poster_id: ${user.id}');
-      print('  title: ${_titleController.text.trim()}');
-      print('  skill_id: $_selectedSkill');
-      print('  location: ${_locationController.text.trim()}');
-      print('  price_type: $_priceType');
-      print('  price_amount: ${_priceController.text}');
-
-      await supabase.from('jobs').insert({
+      final jobData = {
         'poster_id': user.id,
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'skill_id': _selectedSkill,
-        'location_address': _locationController.text.trim(),
+        'location_address': _selectedAddress,
+        'location_lat': _selectedLat,
+        'location_lng': _selectedLng,
+        'barrio': _selectedBarrio,
         'price_type': _priceType,
         'price_amount': double.parse(_priceController.text),
         'status': 'open',
-      });
+        'is_flexible': _isFlexible,
+        'scheduled_date':
+            _isFlexible ? null : _selectedDate?.toIso8601String().split('T')[0],
+        'scheduled_time': _isFlexible ? null : _formatTimeForDb(_selectedTime),
+        'estimated_duration_minutes': _estimatedDuration,
+      };
+
+      print('DEBUG: Submitting job with data: $jobData');
+
+      await supabase.from('jobs').insert(jobData);
+
+      // Save new address if requested
+      if (_saveNewAddress &&
+          _selectedSavedLocationId == null &&
+          _selectedAddress != null &&
+          _selectedLat != null) {
+        try {
+          final isFirst = _savedLocations.isEmpty;
+          await supabase.from('saved_locations').insert({
+            'user_id': user.id,
+            'label': _saveAddressLabelController.text.trim(),
+            'address': _selectedAddress,
+            'barrio': _selectedBarrio,
+            'location_lat': _selectedLat,
+            'location_lng': _selectedLng,
+            'is_default': isFirst, // first saved address becomes default
+          });
+          print('DEBUG: Saved new address');
+        } catch (e) {
+          print('DEBUG: Error saving address (non-fatal): $e');
+        }
+      }
 
       print('DEBUG: Job inserted successfully');
 
@@ -268,7 +450,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Trabajo publicado con éxito!'),
+            content: Text('Trabajo publicado con exito!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -306,10 +488,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    '¿Qué necesitas?',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    'Que necesitas?',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -338,13 +521,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   TextFormField(
                     controller: _titleController,
                     decoration: const InputDecoration(
-                      labelText: 'Título del trabajo',
+                      labelText: 'Titulo del trabajo',
                       hintText: 'Ej: Pintar mi valla',
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Por favor ingresa un título';
+                        return 'Por favor ingresa un titulo';
                       }
                       return null;
                     },
@@ -355,14 +538,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   TextFormField(
                     controller: _descriptionController,
                     decoration: const InputDecoration(
-                      labelText: 'Descripción',
+                      labelText: 'Descripcion',
                       hintText: 'Describe el trabajo en detalle',
                       border: OutlineInputBorder(),
                     ),
                     maxLines: 4,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Por favor ingresa una descripción';
+                        return 'Por favor ingresa una descripcion';
                       }
                       return null;
                     },
@@ -380,13 +563,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     items: _skills.map((skill) {
                       return DropdownMenuItem<String>(
                         value: skill['id'].toString(),
-                        child: Text('${skill['icon'] ?? ''} ${skill['name_es']}'),
+                        child:
+                            Text('${skill['icon'] ?? ''} ${skill['name_es']}'),
                       );
                     }).toList(),
                     onChanged: (value) {
-                      setState(() {
-                        _selectedSkill = value;
-                      });
+                      setState(() => _selectedSkill = value);
                     },
                     validator: (value) {
                       if (value == null) {
@@ -397,20 +579,280 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Location
-                  TextFormField(
-                    controller: _locationController,
+                  // Location: saved address chips + autocomplete
+                  if (_savedLocations.isNotEmpty) ...[
+                    Text(
+                      'Direccion',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ..._savedLocations.map((loc) {
+                          final isSelected =
+                              _selectedSavedLocationId == loc['id'];
+                          final isDefault = loc['is_default'] == true;
+                          return ChoiceChip(
+                            avatar: Icon(
+                              isDefault
+                                  ? Icons.star
+                                  : Icons.location_on,
+                              size: 18,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFFE86A33),
+                            ),
+                            label: Text(loc['label'] as String),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFFE86A33),
+                            labelStyle: TextStyle(
+                              color:
+                                  isSelected ? Colors.white : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            onSelected: (_) => _selectSavedLocation(loc),
+                          );
+                        }),
+                        ActionChip(
+                          avatar: Icon(
+                            Icons.add,
+                            size: 18,
+                            color: _showAutocomplete
+                                ? Colors.white
+                                : const Color(0xFFE86A33),
+                          ),
+                          label: const Text('Nueva'),
+                          backgroundColor: _showAutocomplete
+                              ? const Color(0xFFE86A33)
+                              : null,
+                          labelStyle: TextStyle(
+                            color: _showAutocomplete
+                                ? Colors.white
+                                : Colors.black87,
+                            fontWeight: _showAutocomplete
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                          onPressed: _useNewAddress,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    // Show selected saved address summary
+                    if (!_showAutocomplete && _selectedAddress != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF0E8),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFE86A33).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_on,
+                                color: Color(0xFFE86A33), size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _selectedAddress!,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+
+                  // Autocomplete field (shown when no saved addresses or "Nueva" selected)
+                  if (_showAutocomplete) ...[
+                    PlacesAutocompleteField(
+                      labelText:
+                          _savedLocations.isEmpty ? 'Direccion' : 'Nueva direccion',
+                      hintText: 'Calle, numero, ciudad...',
+                      onPlaceSelected: (place) {
+                        setState(() {
+                          _selectedSavedLocationId = null;
+                          _selectedAddress = place.address;
+                          _selectedLat = place.lat;
+                          _selectedLng = place.lng;
+                          _selectedBarrio = place.barrio;
+                        });
+                      },
+                      validator: (value) {
+                        // Skip validation if a saved address is selected
+                        if (!_showAutocomplete) return null;
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Por favor ingresa una direccion';
+                        }
+                        if (_selectedLat == null) {
+                          return 'Selecciona una direccion del listado';
+                        }
+                        return null;
+                      },
+                    ),
+                    // Save new address checkbox
+                    if (_selectedLat != null &&
+                        _selectedSavedLocationId == null) ...[
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        value: _saveNewAddress,
+                        onChanged: (v) =>
+                            setState(() => _saveNewAddress = v ?? false),
+                        title: const Text(
+                          'Guardar esta direccion',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        activeColor: const Color(0xFFE86A33),
+                      ),
+                      if (_saveNewAddress)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: TextFormField(
+                            controller: _saveAddressLabelController,
+                            decoration: const InputDecoration(
+                              hintText: 'Ej: Mi casa, Oficina...',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                            validator: (value) {
+                              if (_saveNewAddress &&
+                                  (value == null || value.trim().isEmpty)) {
+                                return 'Pon un nombre a esta direccion';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                    ],
+                  ],
+
+                  // Validation message for address when using saved location
+                  if (!_showAutocomplete && _selectedLat == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 12),
+                      child: Text(
+                        'Selecciona una direccion',
+                        style: TextStyle(fontSize: 12, color: Colors.red[700]),
+                      ),
+                    ),
+
+                  if (_selectedBarrio != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, left: 4),
+                      child: Text(
+                        'Zona: $_selectedBarrio',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+
+                  // Scheduling section
+                  Text(
+                    'Cuando lo necesitas?',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    title: const Text('Horario flexible'),
+                    subtitle: const Text(
+                        'Sin fecha ni hora fija, a convenir con el manitas'),
+                    value: _isFlexible,
+                    activeColor: const Color(0xFFE86A33),
+                    onChanged: (v) => setState(() => _isFlexible = v),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+
+                  if (!_isFlexible) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Date picker
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickDate,
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Fecha',
+                                border: OutlineInputBorder(),
+                                suffixIcon:
+                                    Icon(Icons.calendar_today, size: 20),
+                              ),
+                              child: Text(
+                                _selectedDate != null
+                                    ? DateFormat('dd/MM/yyyy')
+                                        .format(_selectedDate!)
+                                    : 'Seleccionar',
+                                style: TextStyle(
+                                  color: _selectedDate != null
+                                      ? Colors.black
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Time picker
+                        Expanded(
+                          child: InkWell(
+                            onTap: _pickTime,
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'Hora',
+                                border: OutlineInputBorder(),
+                                suffixIcon: Icon(Icons.access_time, size: 20),
+                              ),
+                              child: Text(
+                                _selectedTime != null
+                                    ? _selectedTime!.format(context)
+                                    : 'Seleccionar',
+                                style: TextStyle(
+                                  color: _selectedTime != null
+                                      ? Colors.black
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // Estimated duration
+                  DropdownButtonFormField<int>(
+                    value: _estimatedDuration,
                     decoration: const InputDecoration(
-                      labelText: 'Ubicación',
-                      hintText: 'Ej: Alicante Centro',
+                      labelText: 'Duracion estimada (opcional)',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor ingresa una ubicación';
-                      }
-                      return null;
-                    },
+                    hint: const Text('Seleccionar'),
+                    items: _durationOptions.map((opt) {
+                      return DropdownMenuItem<int>(
+                        value: opt['value'] as int,
+                        child: Text(opt['label'] as String),
+                      );
+                    }).toList(),
+                    onChanged: (value) =>
+                        setState(() => _estimatedDuration = value),
                   ),
                   const SizedBox(height: 24),
 
@@ -427,11 +869,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           title: const Text('Precio fijo'),
                           value: 'fixed',
                           groupValue: _priceType,
-                          onChanged: (value) {
-                            setState(() {
-                              _priceType = value!;
-                            });
-                          },
+                          onChanged: (value) =>
+                              setState(() => _priceType = value!),
                           activeColor: const Color(0xFFE86A33),
                         ),
                       ),
@@ -440,11 +879,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           title: const Text('Por hora'),
                           value: 'hourly',
                           groupValue: _priceType,
-                          onChanged: (value) {
-                            setState(() {
-                              _priceType = value!;
-                            });
-                          },
+                          onChanged: (value) =>
+                              setState(() => _priceType = value!),
                           activeColor: const Color(0xFFE86A33),
                         ),
                       ),
@@ -457,10 +893,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     controller: _priceController,
                     decoration: InputDecoration(
                       labelText: _priceType == 'fixed'
-                          ? 'Precio (€)'
-                          : 'Precio por hora (€)',
+                          ? 'Precio (EUR)'
+                          : 'Precio por hora (EUR)',
                       border: const OutlineInputBorder(),
-                      prefixText: '€ ',
+                      prefixText: 'EUR ',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -468,7 +904,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         return 'Por favor ingresa un precio';
                       }
                       if (double.tryParse(value) == null) {
-                        return 'Por favor ingresa un número válido';
+                        return 'Por favor ingresa un numero valido';
                       }
                       return null;
                     },

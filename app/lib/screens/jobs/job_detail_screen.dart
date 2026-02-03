@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../main.dart';
+import '../../services/geocoding_service.dart';
 import '../auth/phone_verification_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
@@ -19,6 +20,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   bool _isLoading = true;
   bool _hasApplied = false;
   bool _isApplying = false;
+  bool _dataChanged = false;
+
+  // Travel time for helpers (mode → minutes for each transport mode)
+  Map<String, int> _travelTimes = {};
+  bool _isLoadingTravelTime = false;
 
   @override
   void initState() {
@@ -35,15 +41,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       final user = supabase.auth.currentUser;
 
       // Load job with related data
-      final jobData = await supabase
-          .from('jobs')
-          .select('''
+      final jobData = await supabase.from('jobs').select('''
             *,
             skills(name_es, icon),
             profiles!jobs_poster_id_fkey(id, name, phone)
-          ''')
-          .eq('id', widget.jobId)
-          .single();
+          ''').eq('id', widget.jobId).single();
 
       // Check if current user has already applied
       if (user != null) {
@@ -62,6 +64,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         _job = jobData;
         _isLoading = false;
       });
+
+      // Load travel time for helpers (non-blocking)
+      _loadTravelTime();
     } catch (e) {
       print('Error loading job details: $e');
       setState(() {
@@ -78,6 +83,122 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  String _travelModeLabel(String mode) {
+    const labels = {
+      'car': 'en coche',
+      'bike': 'en bici',
+      'walk': 'a pie',
+      'transit': 'en transporte publico',
+      'escooter': 'en patinete',
+    };
+    return labels[mode] ?? mode;
+  }
+
+  IconData _travelModeIcon(String mode) {
+    const icons = {
+      'car': Icons.directions_car,
+      'bike': Icons.directions_bike,
+      'walk': Icons.directions_walk,
+      'transit': Icons.directions_bus,
+      'escooter': Icons.electric_scooter,
+    };
+    return icons[mode] ?? Icons.directions;
+  }
+
+  /// Load accurate travel time from Google Distance Matrix API.
+  /// Fetches travel time for ALL of the helper's transport modes.
+  Future<void> _loadTravelTime() async {
+    final user = supabase.auth.currentUser;
+    if (user == null || _job == null) return;
+
+    final jobLat = (_job!['location_lat'] as num?)?.toDouble();
+    final jobLng = (_job!['location_lng'] as num?)?.toDouble();
+    if (jobLat == null || jobLng == null) return;
+
+    try {
+      final profile = await supabase
+          .from('profiles')
+          .select('user_type, location_lat, location_lng')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (profile == null || profile['user_type'] != 'helper') return;
+
+      final homeLat = (profile['location_lat'] as num?)?.toDouble();
+      final homeLng = (profile['location_lng'] as num?)?.toDouble();
+      if (homeLat == null || homeLng == null) return;
+
+      final prefs = await supabase
+          .from('notification_preferences')
+          .select('transport_modes')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      final transportModes = List<String>.from(prefs?['transport_modes'] ?? ['car']);
+      if (transportModes.isEmpty) transportModes.add('car');
+
+      setState(() => _isLoadingTravelTime = true);
+
+      final origin = '$homeLat,$homeLng';
+      final destination = '$jobLat,$jobLng';
+
+      final results = <String, int>{};
+      for (final mode in transportModes) {
+        final minutes = await geocodingService.getTravelTimeMinutes(
+          origin: origin,
+          destination: destination,
+          mode: mode,
+        );
+        if (minutes != null) {
+          results[mode] = minutes;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _travelTimes = results;
+          _isLoadingTravelTime = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingTravelTime = false);
+    }
+  }
+
+  String _formatScheduledDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      const days = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+      const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+      final dayName = days[date.weekday - 1];
+      final monthName = months[date.month - 1];
+      return '${dayName[0].toUpperCase()}${dayName.substring(1)}, ${date.day} de $monthName';
+    } catch (_) {
+      return dateStr;
+    }
+  }
+
+  String _formatScheduledTime(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      return '${parts[0]}:${parts[1]}';
+    } catch (_) {
+      return timeStr;
+    }
+  }
+
+  String _formatDuration(int minutes) {
+    if (minutes < 60) return '$minutes min';
+    if (minutes == 60) return '1 hora';
+    if (minutes == 360) return 'medio día';
+    if (minutes == 480) return 'día completo';
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (mins == 0) return '$hours horas';
+    return '$hours h $mins min';
+  }
+
   Future<void> _checkProfileAndApply() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -86,12 +207,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     try {
       final profile = await supabase
           .from('profiles')
-          .select('phone, bio')
+          .select('phone, bio, phone_verified')
           .eq('id', user.id)
           .single();
 
       final phone = profile['phone'] as String?;
       final bio = profile['bio'] as String?;
+      final phoneVerified = profile['phone_verified'] as bool? ?? false;
 
       final missingFields = <String>[];
       if (phone == null || phone.isEmpty) missingFields.add('Teléfono');
@@ -99,6 +221,35 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
       if (missingFields.isNotEmpty) {
         _showProfileIncompleteDialog(missingFields);
+        return;
+      }
+
+      // Check if phone needs verification
+      if (!phoneVerified) {
+        if (!mounted) return;
+
+        final verified = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PhoneVerificationScreen(
+              phoneNumber: phone!,
+              onVerified: () {
+                // Phone verified successfully
+              },
+            ),
+          ),
+        );
+
+        if (verified == true && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Teléfono verificado'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Now apply to the job
+          await _applyToJob();
+        }
         return;
       }
 
@@ -280,7 +431,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     if (verified == true && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Perfil actualizado y teléfono verificado'),
+                          content:
+                              Text('Perfil actualizado y teléfono verificado'),
                           backgroundColor: Colors.green,
                         ),
                       );
@@ -340,6 +492,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         _hasApplied = true;
         _isApplying = false;
       });
+
+      // Signal to parent screens that data changed
+      _dataChanged = true;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -421,7 +576,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final user = supabase.auth.currentUser;
     final isOwnJob = user != null && poster != null && poster['id'] == user.id;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pop(_dataChanged);
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -555,9 +717,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.location_on,
-                      color: const Color(0xFFE86A33),
+                      color: Color(0xFFE86A33),
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -587,6 +749,158 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ],
                 ),
               ),
+              // Travel time (helpers only, shown when available)
+              if (_isLoadingTravelTime || _travelTimes.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F7FF),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF2196F3).withOpacity(0.3),
+                    ),
+                  ),
+                  child: _isLoadingTravelTime
+                      ? const Row(
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF2196F3),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Calculando tiempo de viaje...',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF2196F3),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Tiempo de viaje estimado',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Sort by travel time (fastest first)
+                            ...(_travelTimes.entries.toList()
+                                  ..sort((a, b) => a.value.compareTo(b.value)))
+                                .map((entry) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _travelModeIcon(entry.key),
+                                            color: const Color(0xFF2196F3),
+                                            size: 22,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            '~${entry.value} min ${_travelModeLabel(entry.key)}',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1565C0),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
+                          ],
+                        ),
+                ),
+              ],
+
+              // Scheduling info (only show if job has scheduling data)
+              if (_job!['is_flexible'] == true ||
+                  _job!['scheduled_date'] != null ||
+                  _job!['estimated_duration_minutes'] != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today,
+                        color: Color(0xFFE86A33),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _job!['is_flexible'] == true
+                                  ? 'Horario flexible'
+                                  : 'Horario',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            if (_job!['scheduled_date'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatScheduledDate(_job!['scheduled_date']),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                            if (_job!['scheduled_time'] != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatScheduledTime(_job!['scheduled_time']),
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ],
+                            if (_job!['estimated_duration_minutes'] != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '~${_formatDuration(_job!['estimated_duration_minutes'])} estimado',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 16),
 
               // Poster info
@@ -615,7 +929,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          posterName.isNotEmpty ? posterName[0].toUpperCase() : 'U',
+                          posterName.isNotEmpty
+                              ? posterName[0].toUpperCase()
+                              : 'U',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -658,11 +974,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _hasApplied || _isApplying ? null : _checkProfileAndApply,
+                    onPressed: _hasApplied || _isApplying
+                        ? null
+                        : _checkProfileAndApply,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _hasApplied
-                          ? Colors.grey
-                          : const Color(0xFFE86A33),
+                      backgroundColor:
+                          _hasApplied ? Colors.grey : const Color(0xFFE86A33),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -699,14 +1016,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     color: const Color(0xFFFFF0E8),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline,
                         color: Color(0xFFE86A33),
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
+                      SizedBox(width: 12),
+                      Expanded(
                         child: Text(
                           'Este es tu trabajo publicado',
                           style: TextStyle(
@@ -721,6 +1038,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

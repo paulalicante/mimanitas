@@ -1,0 +1,7 @@
+.vercel
+.env*.local
+.claude/
+.vscode/
+supabase/.temp/
+nul
+*.png.bak

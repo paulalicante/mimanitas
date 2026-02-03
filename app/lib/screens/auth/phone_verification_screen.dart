@@ -59,14 +59,17 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
     });
 
     try {
-      final user = supabase.auth.currentUser;
-      if (user == null) {
+      final session = supabase.auth.currentSession;
+      if (session == null) {
         throw Exception('Usuario no autenticado');
       }
 
       final response = await supabase.functions.invoke(
         'send-verification-code',
         body: {'phone': widget.phoneNumber},
+        headers: {
+          'Authorization': 'Bearer ${session.accessToken}',
+        },
       );
 
       if (response.status == 200) {
@@ -103,16 +106,19 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
     });
 
     try {
-      final user = supabase.auth.currentUser;
-      if (user == null) {
+      final session = supabase.auth.currentSession;
+      if (session == null) {
         throw Exception('Usuario no autenticado');
       }
 
       final response = await supabase.functions.invoke(
-        'verify-code',
+        'verify-sms-code',
         body: {
           'phone': widget.phoneNumber,
           'code': _codeController.text.trim(),
+        },
+        headers: {
+          'Authorization': 'Bearer ${session.accessToken}',
         },
       );
 

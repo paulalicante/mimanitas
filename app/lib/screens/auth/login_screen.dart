@@ -1,8 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../main.dart';
 import 'signup_screen.dart';
+
+// DEV ONLY: Test account credentials - change these to your actual test accounts
+const _devTestAccounts = [
+  {'name': 'Seeker', 'email': 'paulsidneyward@gmail.com', 'password': 'MiManitas'},
+  {'name': 'Helper', 'email': 'paulspainward@gmail.com', 'password': 'MiManitas'},
+];
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _rememberMe = false;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -137,6 +145,35 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // DEV ONLY: Quick login with test account
+  Future<void> _devQuickLogin(String email, String password) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } on AuthException catch (error) {
+      setState(() {
+        _errorMessage = _getSpanishErrorMessage(error.message);
+      });
+    } catch (error) {
+      setState(() {
+        _errorMessage = 'Error: $error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,13 +261,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Password field
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           prefixIcon: const Icon(Icons.lock_outlined),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -378,6 +425,58 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+
+                // DEV ONLY: Quick login buttons
+                if (kDebugMode) ...[
+                  const SizedBox(height: 32),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'DEV: Quick Login',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: _devTestAccounts.map((account) {
+                            return Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: ElevatedButton(
+                                  onPressed: _isLoading
+                                      ? null
+                                      : () => _devQuickLogin(
+                                            account['email']!,
+                                            account['password']!,
+                                          ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey[700],
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  child: Text(
+                                    account['name']!,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

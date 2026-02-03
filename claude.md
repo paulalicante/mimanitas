@@ -42,7 +42,7 @@ Patient capital model — Paul has pension income, no burn rate pressure. Can wa
 - **Frontend:** Flutter Web (single codebase, can add mobile later)
 - **Backend:** Supabase (Postgres, auth, realtime, storage)
 - **Hosting:** Vercel (auto-deploys from GitHub)
-- **Payments:** Mangopay or Stripe Connect (escrow functionality)
+- **Payments:** Stripe Connect (Express accounts, destination charges)
 
 ## Key Features
 
@@ -52,13 +52,13 @@ Workers show when they're free. Flips the gig model — instead of "here's a job
 Perfect for shift workers (like Audel, 21, who has unpredictable schedules) and students.
 
 ### 2. Escrow Payment
-- Employer deposits when job is agreed
+- Employer deposits when job is agreed (via Stripe Checkout)
 - Worker sees payment is guaranteed
 - Work completed
 - Employer confirms satisfaction
-- Payment released
+- Payment released immediately
 
-**Dispute resolution:** If disputed after 7 days, auto 50/50 split. No reviews from either party in disputed transactions. This removes revenge review incentive and keeps platform out of he-said-she-said.
+**Design decision (Jan 2026):** No 7-day dispute window. Payment is released immediately when the seeker marks the job as complete. This is simpler for users and follows the Airbnb model (pay out when service is delivered). Dispute handling is manual/out-of-band if needed.
 
 ### 3. Pickup Option
 Workers can offer to collect employers who live on the outskirts and don't have transport. Solves a real problem in spread-out areas.
@@ -93,6 +93,22 @@ Filed electronically by January 31 each year. Platform is liable for reporting, 
 ### Civil Liability
 Article 1902 Código Civil: liability requires action/omission BY platform. As pure intermediary, we're likely protected — we're not party to the transaction. Spain is less litigious than US. Real risk is reputational, not legal.
 
+### GDPR Data Storage
+Under GDPR Article 6(1)(c), we can store data required for legal compliance:
+
+**What we store (legal basis: DAC7/Modelo 238):**
+- DNI/NIE — Required for tax reporting
+- Annual earnings — Required for tax thresholds
+- Transaction count — Required for tax thresholds
+
+**What Stripe stores (not us):**
+- IBAN/bank details
+- Date of birth
+- Full address
+- ID verification documents
+
+**Retention:** Tax data must be kept 5 years minimum (Spanish tax law). Delete after statutory period expires.
+
 ## MVP Features
 
 1. Landing page ✅ (done)
@@ -111,7 +127,7 @@ users
   - email
   - name
   - location (lat/lng or barrio)
-  - type (helper | seeker | both)
+  - type (helper | seeker) — ONE account = ONE role, no "both"
   - bio
   - created_at
 
@@ -220,9 +236,185 @@ mimanitas/
 - ✅ Profile completion prompts
 - ✅ Phone number validation (Spanish format)
 - ✅ SMS phone verification (Twilio integration)
-- ⏳ Payment & withdrawal system
-- ⏳ Review/rating system
-- ⏳ Messaging between users
+- ✅ Review/rating system
+- ✅ Messaging between users (conversations, chat screens)
+- ✅ Real-time message notifications (Supabase Realtime)
+- ✅ Notification queue system with dismiss button
+- ✅ Unread message badge on Messages button
+- ✅ Payment system with Stripe Connect (see Payment System section below)
+- ✅ Stripe webhook handler (payment status, account updates, disputes, payouts)
+- ✅ Real-time job notifications (new jobs appear instantly for helpers)
+- ✅ Job completion releases payment immediately to helper
+- ✅ Notification preferences screen (helpers opt into SMS/email/WhatsApp, filter by skill/barrio/price)
+- ✅ SMS notification pipeline (notify-new-job Edge Function sends SMS via Twilio to opted-in helpers)
+- ✅ Database webhooks configured (jobs INSERT → notify-new-job, applications INSERT → notify-new-application)
+- ✅ Twilio upgraded to paid account (SMS can now reach any number, not just verified)
+- ✅ WhatsApp Business sender active (MiManitas, +1 412-419-3947 via Twilio)
+- ✅ Premium-gated external notifications (SMS/WhatsApp/email gated by subscription_status + env var)
+- ✅ Smart job matching: distance (travel time), skills, availability (see Smart Matching section below)
+- ✅ Availability screen for helpers (weekly calendar with time slots)
+- ✅ Google Places autocomplete for job addresses and helper home location
+- ✅ Helper dashboard on home screen (availability, jobs, upcoming, preferences, payments)
+- ✅ Browse jobs date format includes day-of-week (e.g., "Lun, 15 feb")
+- ✅ Schedule-based job filtering in browse jobs (calendar icon toggle)
+- ⏳ Email notifications via Resend (RESEND_API_KEY not yet configured)
+- ⏳ SMS notifications not yet tested end-to-end (no helper has opted in yet)
+- ✅ WhatsApp message templates created + submitted for Meta approval
+
+## Payment System (Jan 2026)
+
+**Provider:** Stripe Connect (Express accounts)
+**Status:** Core flow working end-to-end in sandbox. Tested: post job → apply → pay → assign → complete → payment released → helper sees balance.
+
+### What's Done:
+- ✅ Spanish validators (`app/lib/utils/spanish_validators.dart`)
+  - DNI validation (8 digits + control letter)
+  - NIE validation (X/Y/Z + 7 digits + letter)
+  - Spanish IBAN validation (mod-97 algorithm)
+  - Phone and postal code validation
+- ✅ Database migration (`supabase/migrations/20260128000000_payment_tables.sql`)
+  - `stripe_accounts` table (links helpers to Stripe Connect)
+  - `payment_intents` table (tracks payments)
+  - `withdrawals` table (helper payout requests)
+  - `helper_balances` view (calculates available/pending balance)
+  - Added `payment_status` and `dispute_window_ends_at` to jobs table
+- ✅ Dependencies added (`flutter_stripe`, `url_launcher`)
+- ✅ Stripe Sandbox account created
+- ✅ Publishable key added to `.env`
+- ✅ Edge Functions (all deployed with `--no-verify-jwt`):
+  - `create-stripe-account` - Creates Stripe Connect Express account for helpers
+  - `check-stripe-status` - Checks helper's Stripe account status
+  - `create-checkout-session` - Creates Stripe Checkout for seeker payments
+  - `verify-checkout` - Verifies payment completion
+  - `confirm-payment` - Confirms payment and updates job status
+  - `handle-stripe-webhooks` - Handles all Stripe webhook events (deployed with `--no-verify-jwt`)
+  - `notify-new-job` - Database webhook: notifies helpers when new jobs are posted
+- ✅ Payment service (`app/lib/services/payment_service.dart`)
+- ✅ Payment setup screen (`app/lib/screens/payments/payment_setup_screen.dart`)
+- ✅ Earnings screen (`app/lib/screens/payments/earnings_screen.dart`)
+- ✅ Helper onboarding flow with Stripe Connect Express
+- ✅ Seeker payment flow with Stripe Checkout
+- ✅ Stripe webhook handler (`handle-stripe-webhooks`)
+  - `checkout.session.completed` — backup for verify-checkout (catches browser-close cases)
+  - `payment_intent.succeeded` / `payment_intent.payment_failed` — payment status tracking
+  - `account.updated` — Stripe Connect onboarding progress
+  - `charge.dispute.created` — freezes funds on chargeback
+  - `payout.paid` / `payout.failed` — helper withdrawal tracking
+- ✅ Two Stripe webhook endpoints configured:
+  - `mimanitas-payments` (Your account): checkout.session.completed, payment_intent.succeeded, payment_intent.payment_failed, charge.dispute.created
+  - `mimanitas-connect` (Connected accounts): account.updated, payout.paid, payout.failed
+- ✅ Webhook signature verification with dual secrets (HMAC-SHA256, constant-time comparison)
+- ✅ Full payment flow tested end-to-end in sandbox
+- ✅ Job completion releases payment immediately (no dispute window)
+- ✅ Helper earnings screen shows Disponible/Pendiente/Historial
+
+### Edge Function Auth Pattern:
+All Edge Functions use direct token extraction (NOT session-based):
+```typescript
+const token = authHeader.replace('Bearer ', '')
+const { data: { user } } = await supabaseClient.auth.getUser(token)
+```
+
+### Test Mode vs Live Mode:
+The `create-stripe-account` function auto-detects test vs live mode:
+- **Test mode** (`sk_test_*`): Pre-fills fake verification data (DOB, address) so helpers skip Stripe's verification steps
+- **Live mode** (`sk_live_*`): Only pre-fills name/email/phone from profile; helpers must provide real verification data
+
+**Test mode values:**
+- Test IBAN (Spain): `ES0700120345030000067890`
+- Test phone: `+34 600 000 000`
+- Address line: `address_full_match` (Stripe magic value)
+
+This happens automatically based on the `STRIPE_SECRET_KEY` prefix. When switching to production:
+1. Replace `STRIPE_SECRET_KEY` in Supabase Edge Function Secrets with live key
+2. Replace `STRIPE_PUBLISHABLE_KEY` in app `.env` with live key
+3. Delete all test `stripe_accounts` rows (they reference test Stripe accounts)
+
+### What's Next:
+- ✅ WhatsApp message templates created (pending Meta approval)
+- ⏳ Email notifications for new jobs (need RESEND_API_KEY in Supabase secrets)
+- ⏳ In-app withdrawal flow for helpers (currently helpers use Stripe dashboard)
+- ⏳ Payment history/receipts screen for seekers
+- ✅ Edge Functions deployed with premium gate (gate open)
+- ✅ `REQUIRE_PREMIUM_NOTIFICATIONS=false` set in Supabase secrets
+
+### Payment Flow:
+1. Seeker accepts application → redirected to Stripe Checkout
+2. Seeker pays job amount + 10% platform fee
+3. Money held by Stripe (destination charges with `transfer_data`)
+4. Job status → `assigned`, payment_status → `paid`, transaction status → `held`
+5. Seeker marks job complete (via "Completar" button in Mis Trabajos)
+6. Payment released immediately: job status → `completed`, payment_status → `released`, transaction → `released`
+7. Helper sees balance update in earnings screen (Disponible)
+8. Helper can withdraw to Spanish IBAN via Stripe dashboard (or future in-app flow)
+
+**Backup path:** If user closes browser before verify-checkout runs, the `checkout.session.completed` webhook catches it and processes the payment.
+
+### Data Pre-fill Strategy:
+In live mode, we only pre-fill data we already have from the user's profile:
+- `first_name` / `last_name` — from profile name (if set)
+- `email` — always have this from auth
+- `phone` — only if user has verified their phone
+
+**We intentionally do NOT collect/store:**
+- Date of birth
+- Full address
+- IBAN/bank details
+
+**Why this is correct:**
+1. **GDPR compliance** — We only store data needed for platform operations
+2. **Security** — Bank details go directly to Stripe, never touch our servers
+3. **Less maintenance** — Stripe's form handles validation, address autocomplete, etc.
+4. **User trust** — Stripe's PCI-compliant form is familiar and trusted
+
+Stripe's Express onboarding collects any missing required fields. This is the recommended approach — let Stripe handle the financial KYC.
+
+### Tax Compliance:
+- Track `annual_earnings_eur` and `transaction_count` per helper
+- Auto-flag when helper reaches €2,000 or 30 transactions (DAC7 threshold)
+- Collect DNI/NIE before first withdrawal for Modelo 238 reporting
+
+## Stripe Webhooks
+
+**Two webhook endpoints configured in Stripe Dashboard:**
+
+1. **mimanitas-payments** (Your account events)
+   - URL: `https://hspubomqztpytlfqpwyn.supabase.co/functions/v1/handle-stripe-webhooks`
+   - Events: checkout.session.completed, payment_intent.succeeded, payment_intent.payment_failed, charge.dispute.created
+   - Secret env var: `STRIPE_WEBHOOK_SECRET`
+
+2. **mimanitas-connect** (Connected account events)
+   - Same URL
+   - Events: account.updated, payout.paid, payout.failed
+   - Secret env var: `STRIPE_CONNECT_WEBHOOK_SECRET`
+
+**Signature verification:** The handler tries both secrets sequentially (HMAC-SHA256 with constant-time comparison). Replay protection: rejects timestamps older than 5 minutes.
+
+**Stripe CLI installed** at: `C:\Users\Honey\AppData\Local\Microsoft\WinGet\Packages\Stripe.StripeCli_Microsoft.Winget.Source_8wekyb3d8bbwe\stripe.exe`
+
+## Real-time Notifications
+
+**Implementation:** `app/lib/services/job_notification_service.dart`
+
+- Uses Supabase Realtime to subscribe to `jobs` table INSERT events
+- Helper accounts see a MaterialBanner when new jobs are posted
+- Notifications persist until user dismisses them or clicks "Ver" (no auto-close)
+- "Ver" navigates to the job detail screen
+- Database webhook (`notify-new-job`) also fires on job INSERT for push/SMS/email notifications
+
+**Notification preferences:** `supabase/migrations/20260131100000_notification_preferences.sql`
+- Users can opt in/out of SMS, email, WhatsApp notifications
+- Stored in `notification_preferences` table
+
+## Design Decisions (Jan 2026)
+
+1. **One account = one role.** Users are either a helper OR a seeker, never both. Like Workaway.info. Separate accounts needed if someone wants to be both. This avoids UI complexity and role-switching confusion.
+
+2. **No dispute window.** Payment released immediately when seeker marks job complete. Simpler for users. Disputes handled manually if needed.
+
+3. **Notifications persist.** Job notifications stay on screen until user dismisses or clicks through. No auto-close timer.
+
+4. **Webhook as backup.** The `checkout.session.completed` webhook duplicates what `verify-checkout` does, ensuring payment is recorded even if the user closes their browser during the Stripe redirect.
 
 ## SMS Phone Verification
 
@@ -260,6 +452,231 @@ mimanitas/
 
 This is infrastructure for trust in a marketplace where people meet in person.
 
+## WhatsApp Business Setup (Jan 2026)
+
+**Goal:** Send WhatsApp notifications to helpers when new jobs are posted.
+**Provider:** Twilio WhatsApp Business API
+**Status:** ACTIVE — WhatsApp sender registered and live. Ready to send messages.
+
+### What's Done:
+- ✅ Twilio upgraded to paid account (was on trial)
+- ✅ MiManitas Facebook Page created (category: In-Home Service, website: www.mimanitas.me, city: Alicante)
+- ✅ Started Twilio WhatsApp Self Sign-up flow (Twilio Console → Messaging → Senders → WhatsApp Senders)
+- ✅ Meta Business Portfolio created (name: "Mi Manitas") — created during Twilio's "Continue with Facebook" popup
+- ✅ WhatsApp Business Account (WABA) created — also created during the same popup
+- ✅ Twilio number assigned for WhatsApp: +1 (412) 419-3947
+
+### Resolved Issues:
+- First attempts mistakenly used Paul's personal Spanish number and Norwegian number — both failed
+- The correct approach was to use the **Twilio number** from step 2 of the Self Sign-up page
+- Meta API had timeout issues and rate-limited after multiple retries
+- Eventually completed successfully — sender is now Online
+
+### WhatsApp Sender Details:
+- **Number:** +1 (412) 419-3947
+- **Display name:** MiManitas
+- **Status:** Online (green checkmark)
+- **Throughput:** 80 MPS
+- **WABA ID:** 1542890803605593
+- **Meta Business Manager ID:** 90230778216886
+
+### WhatsApp Content Templates:
+- ✅ **mimanitas_nuevo_trabajo** (`HX849428c56adba4605701346d1606fa1b`): `Mi Manitas: Nuevo trabajo "{{1}}" {{2}} — {{3}}. Abre la app para ver detalles.`
+- ✅ **mimanitas_nueva_solicitud** (`HX36e73b51c2a58717bf218c7f1a07f242`): `Mi Manitas: {{1}} ha aplicado a tu trabajo "{{2}}". Abre la app para revisar su solicitud.`
+- Both submitted for Meta approval (category: UTILITY)
+- Template SIDs stored as Supabase secrets: `WA_TEMPLATE_NEW_JOB`, `WA_TEMPLATE_NEW_APPLICATION`
+- Edge Functions updated to use `ContentSid` + `ContentVariables` instead of raw `Body`
+
+### What's Next for WhatsApp:
+1. Wait for Meta template approval (can check status in Twilio Console → Content Template Builder)
+2. Test end-to-end once approved
+3. Consider getting a Spanish +34 Twilio number for local trust (~$1-2/month)
+
+### Key Details:
+- The WhatsApp sender number is the **Twilio number** (+1 412-419-3947), not a personal number
+- Personal WhatsApp and WhatsApp Business API CANNOT share the same phone number
+- Twilio verifies their own numbers with Meta — no separate SIM card needed
+- Meta Business verification (separate from phone verification) may be required later — takes 5-20 business days
+- The `notify-new-job` Edge Function already exists and handles SMS; WhatsApp will be added as an additional channel
+- For production, get a Spanish +34 Twilio number (~$1-2/month) for local trust. SMS to Spain costs ~$0.07-0.10/msg from a Spanish number vs ~$0.08-0.12 from US number
+- Current US number works fine for testing
+
+## Premium-Gated External Notifications (Feb 2026)
+
+**Concept:** SMS, WhatsApp, and email notifications are premium features. In-app notifications (Supabase Realtime) stay free forever.
+
+**Dual-check:** Both sides must be premium for external notifications to fire:
+- **Seekers** must be premium for their posted jobs to trigger external notifications to helpers
+- **Helpers** must be premium to receive external notifications about new jobs
+
+### How It Works:
+- Uses existing `subscription_status` field on `profiles` table
+- `free_trial` or `active` = premium (gets external notifications)
+- `cancelled`, `expired`, or `NULL` = not premium (in-app only)
+- `REQUIRE_PREMIUM_NOTIFICATIONS` env var controls the gate:
+  - `false` (default at launch): gate is open, everyone gets external notifications
+  - `true`: only premium users get external notifications
+
+### Implementation:
+- **Migration:** `supabase/migrations/20260201000000_ensure_subscription_status.sql` — backfills NULL subscription_status to `free_trial`
+- **Edge Functions:** `notify-new-job` and `notify-new-application` both have `isPremium()` helper that checks env var + subscription_status
+- **Flutter UI:** `notification_preferences_screen.dart` loads user's subscription_status and disables SMS/Email/WhatsApp toggles if not premium, shows orange "función premium" banner
+
+### To Flip the Gate (Monetize):
+```bash
+supabase secrets set REQUIRE_PREMIUM_NOTIFICATIONS=true
+```
+No code deploy needed. Non-premium users' external notifications stop immediately. Their UI toggles grey out on next app load.
+
+### What Stays Free:
+- In-app real-time notifications (Supabase Realtime, zero marginal cost)
+- All existing app features (messaging, job posting, applying, reviews, etc.)
+
+## Supabase Edge Function Secrets
+
+These environment variables must be set in Supabase Dashboard → Edge Functions → Secrets:
+
+| Secret | Status | Purpose |
+|--------|--------|---------|
+| `STRIPE_SECRET_KEY` | ✅ Set | Stripe API calls |
+| `STRIPE_WEBHOOK_SECRET` | ✅ Set | Verify payment webhook signatures |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | ✅ Set | Verify connect webhook signatures |
+| `TWILIO_ACCOUNT_SID` | ✅ Set | SMS verification |
+| `TWILIO_AUTH_TOKEN` | ✅ Set | SMS verification |
+| `TWILIO_PHONE_NUMBER` | ✅ Set | SMS sender number |
+| `GOOGLE_MAPS_API_KEY` | ✅ Set | Google Places autocomplete (smart matching) |
+| `RESEND_API_KEY` | ❌ Not set | Email notifications (notify-new-job) |
+| `REQUIRE_PREMIUM_NOTIFICATIONS` | ✅ Set (`false`) | Premium gate for external notifications (flip to `true` to monetize) |
+| `WA_TEMPLATE_NEW_JOB` | ✅ Set | WhatsApp Content Template SID for new job notifications |
+| `WA_TEMPLATE_NEW_APPLICATION` | ✅ Set | WhatsApp Content Template SID for new application notifications |
+
+## Smart Job Matching (Feb 2026)
+
+**Goal:** Helpers only get notified about jobs they can realistically do — within their travel time, matching their skills, fitting their schedule.
+
+### How It Works:
+
+Three-pass filter system applied both server-side (Edge Function for SMS/WhatsApp/email) and client-side (Flutter for in-app notifications):
+
+1. **Skills / Barrio / Price** — Existing filters. Barrio filter only applies if helper has NOT set up distance-based filtering (distance takes priority over barrio).
+
+2. **Distance (travel time)** — If job has lat/lng AND helper has home location + transport modes:
+   - **Server-side:** Google Distance Matrix API for real travel times (driving, bicycling, walking, transit)
+   - **Client-side:** Haversine distance + speed estimates (car 30km/h, transit 20km/h, escooter 15km/h, bike 12km/h, walk 5km/h)
+   - Compared against helper's `max_travel_minutes` setting
+   - Transport mode mapping: car→driving, bike→bicycling, walk→walking, transit→transit, escooter→bicycling
+
+3. **Availability** — If job has scheduled date/time AND is NOT flexible:
+   - Checks helper's `availability` table for matching day + time slot
+   - Recurring slots match by day_of_week, specific slots match by exact date
+   - Helpers with NO availability records = treated as "always available"
+
+### Graceful Fallbacks:
+
+| Helper has... | Matching behavior |
+|---|---|
+| Location + transport modes | Distance Matrix API (travel time) |
+| Barrio preferences only | Barrio string matching (existing) |
+| Neither location nor barrio | Receives all job notifications |
+| No availability records | Treated as "always available" |
+| Availability records | Only notified for jobs fitting their schedule |
+
+### What Seekers See (Post Job):
+- Address field: Google Places autocomplete (type-ahead) → stores lat/lng/barrio
+- Scheduling: "Horario flexible" toggle OR date picker + time picker
+- Estimated duration dropdown (30min, 1h, 2h, 3h, 4h, medio dia, dia completo)
+
+### What Helpers See (Notification Preferences):
+- "Mi ubicacion" — Google Places autocomplete for home address → stores lat/lng to profile
+- "Modo de transporte" — Multi-select chips: Coche, Bici, A pie, Bus/Tram, Patinete
+- "Tiempo maximo de viaje" — Slider 5-60 min (step 5, default 30)
+- Existing skill/barrio/price filters kept as fallbacks
+
+### What Helpers See (Availability Screen):
+- Weekly calendar Mon-Sun
+- Each day shows time slots as chips
+- "+" button per day to add start/end time via pickers
+- Accessible from home screen "Publicar disponibilidad" button
+
+### Database Changes:
+- **Migration:** `supabase/migrations/20260201200000_smart_matching.sql`
+- `notification_preferences`: added `transport_modes TEXT[]`, `max_travel_minutes INTEGER`
+- `jobs`: added `is_flexible BOOLEAN`, `estimated_duration_minutes INTEGER`
+- Index: `idx_availability_user_dow_date` on availability table
+
+### New Files:
+- `supabase/functions/geocode-address/index.ts` — Server-side proxy to Google Maps APIs (autocomplete, details, distance matrix). Hides API key, avoids CORS.
+- `app/lib/services/geocoding_service.dart` — Flutter service wrapping geocode-address Edge Function
+- `app/lib/widgets/places_autocomplete_field.dart` — Reusable address autocomplete widget with dropdown overlay
+- `app/lib/screens/profile/availability_screen.dart` — Weekly availability calendar
+
+### Modified Files:
+- `app/lib/screens/jobs/post_job_screen.dart` — Address autocomplete + scheduling fields
+- `app/lib/screens/profile/notification_preferences_screen.dart` — Location, transport, travel time sections
+- `supabase/functions/notify-new-job/index.ts` — Distance Matrix API calls + availability checking
+- `app/lib/services/job_notification_service.dart` — Client-side Haversine distance filter
+- `app/lib/screens/home/home_screen.dart` — "Publicar disponibilidad" button wired to AvailabilityScreen
+
+### Google Maps API Setup:
+Need a Google Cloud project with these APIs enabled:
+- **Places API** (autocomplete)
+- **Geocoding API** (address → lat/lng)
+- **Distance Matrix API** (travel time by mode)
+
+Set the key: `supabase secrets set GOOGLE_MAPS_API_KEY=<your-key>`
+
+Cost at Mi Manitas scale (~50 users): ~$3-5/month
+
+### Google Cloud Console Steps:
+1. Go to https://console.cloud.google.com
+2. Create a new project (e.g., "Mi Manitas")
+3. Go to "APIs & Services" → "Library"
+4. Enable: Places API, Geocoding API, Distance Matrix API
+5. Go to "APIs & Services" → "Credentials"
+6. Create API key
+7. Restrict key: Application restrictions → None (Edge Function uses server-side), API restrictions → restrict to the 3 APIs above
+8. Set in Supabase: `supabase secrets set GOOGLE_MAPS_API_KEY=<key>`
+
+## Helper Dashboard (Feb 2026)
+
+**Goal:** Replace the marketing/landing content on the helper home screen with an actionable dashboard showing real data. Seekers still see the existing marketing layout.
+
+### What Helpers See:
+
+When logged in as a helper, the home screen shows 5 dashboard cards instead of the hero/CTA/features marketing sections:
+
+1. **Mi disponibilidad** — 7-day row (L M X J V S D) with orange circles for days with availability set, grey dashes for empty days. Time ranges shown below active days. Taps to AvailabilityScreen.
+
+2. **Trabajos disponibles** — Large orange number showing count of open jobs the helper hasn't applied to yet. Taps to BrowseJobsScreen.
+
+3. **Próximos trabajos** — Up to 3 accepted/assigned jobs with title, seeker name, and date (with day-of-week). Only shows if there are upcoming jobs. "Ver todos" link to MyApplicationsScreen.
+
+4. **Preferencias** — Summary showing home barrio, transport modes + max travel time, and active notification channels. "Pausado" badge if notifications paused. Taps to NotificationPreferencesScreen.
+
+5. **Ganancias** — Two pills side by side: "Disponible" (green) and "Pendiente" (orange) with amounts from `helper_balances` view. Taps to EarningsScreen.
+
+### Implementation:
+- **File:** `app/lib/screens/home/home_screen.dart`
+- Dashboard data loaded via `_loadDashboardData()` with 5 parallel Supabase queries
+- Data refreshes after returning from any sub-screen
+- Each loader wrapped in try/catch so one failure doesn't break others
+- Shared `_buildDashboardCard()` helper for consistent card styling
+
+### Browse Jobs Date Format:
+- **File:** `app/lib/screens/jobs/browse_jobs_screen.dart`
+- `_formatScheduleCompact()` now shows day-of-week: "Lun, 15 feb" instead of "15 feb"
+- Uses Spanish day abbreviations: dom, lun, mar, mie, jue, vie, sab
+
+### Schedule Filter in Browse Jobs:
+- Calendar icon in browse jobs app bar toggles schedule-based filtering
+- When active: only shows jobs that fit helper's availability (orange banner: "Solo trabajos que encajan con tu horario")
+- When inactive: shows all jobs (green banner: "Mostrando todos los trabajos")
+- Icon only appears if helper has availability records set
+
+### Important:
+- Adding new state variables to the home screen requires a **hot restart** (Shift+R or stop/start), not just hot reload (r)
+- Seekers see the unchanged marketing/landing page layout
+
 ## Notes for Claude
 
 - Paul is a "vibe coder" — describe what you want, AI writes it
@@ -269,3 +686,5 @@ This is infrastructure for trust in a marketplace where people meet in person.
 - Located in Alicante, Spain
 - Family includes Michelle (13, fluent Spanish, interested in projects) and Michael (11, plays football)
 - All UI copy should be in Spanish for this project
+- Paul manages 6 projects simultaneously — tracking what's been done is Claude's responsibility
+- Step-by-step guidance needed for unfamiliar tasks (e.g., webhooks, Meta Business verification)

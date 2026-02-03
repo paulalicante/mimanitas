@@ -45,30 +45,51 @@ async function sendSMS(to: string, code: string): Promise<boolean> {
   return true
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
     // Get authorization header
     const authHeader = req.headers.get('Authorization')
+
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Create Supabase client
+    // Create Supabase client with Authorization header
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
-    // Get user from auth header
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    })
+
+    // Get user from the JWT token in the Authorization header
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
 
     if (authError || !user) {
+      console.error('Auth error:', authError)
       return new Response(
-        JSON.stringify({ error: 'Invalid token' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          error: 'Invalid token',
+          details: authError?.message || 'No user found',
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -78,7 +99,7 @@ Deno.serve(async (req) => {
     if (!phone || phone.trim() === '') {
       return new Response(
         JSON.stringify({ error: 'Phone number is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -88,7 +109,7 @@ Deno.serve(async (req) => {
     if (!phoneRegex.test(cleanedPhone)) {
       return new Response(
         JSON.stringify({ error: 'Invalid Spanish phone number format' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -104,9 +125,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Create admin client for database operations
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+
     // Check for recent verification attempts (rate limiting)
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString()
-    const { data: recentCodes } = await supabase
+    const { data: recentCodes } = await supabaseAdmin
       .from('verification_codes')
       .select('*')
       .eq('user_id', user.id)
@@ -116,7 +141,7 @@ Deno.serve(async (req) => {
     if (recentCodes && recentCodes.length > 0) {
       return new Response(
         JSON.stringify({ error: 'Please wait before requesting another code' }),
-        { status: 429, headers: { 'Content-Type': 'application/json' } }
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -126,7 +151,7 @@ Deno.serve(async (req) => {
     // Store in database with 10-minute expiration
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseAdmin
       .from('verification_codes')
       .insert({
         user_id: user.id,
@@ -141,7 +166,7 @@ Deno.serve(async (req) => {
       console.error('Database error:', dbError)
       return new Response(
         JSON.stringify({ error: 'Failed to create verification code' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -151,7 +176,7 @@ Deno.serve(async (req) => {
     if (!smsSent) {
       return new Response(
         JSON.stringify({ error: 'Failed to send SMS' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -160,14 +185,14 @@ Deno.serve(async (req) => {
         success: true,
         message: 'Verification code sent successfully',
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     console.error('Unexpected error:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
