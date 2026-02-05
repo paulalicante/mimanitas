@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../services/job_notification_service.dart';
 import '../../widgets/places_autocomplete_field.dart';
+import '../../app_theme.dart';
 import 'availability_screen.dart';
 
 /// Transport mode definitions
@@ -144,7 +145,7 @@ class _NotificationPreferencesScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar preferencias: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -200,7 +201,7 @@ class _NotificationPreferencesScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Preferencias guardadas'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop();
@@ -211,7 +212,7 @@ class _NotificationPreferencesScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al guardar: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -223,15 +224,10 @@ class _NotificationPreferencesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Preferencias',
-          style: TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
@@ -244,7 +240,6 @@ class _NotificationPreferencesScreenState
                 : const Text(
                     'Guardar',
                     style: TextStyle(
-                      color: Color(0xFFE86A33),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -253,7 +248,7 @@ class _NotificationPreferencesScreenState
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE86A33)),
+              child: CircularProgressIndicator(),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -265,17 +260,17 @@ class _NotificationPreferencesScreenState
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: _paused ? Colors.orange : Colors.transparent,
+                        color: _paused ? AppColors.orange : Colors.transparent,
                         width: _paused ? 2 : 0,
                       ),
                     ),
-                    color: _paused ? Colors.orange.shade50 : null,
+                    color: _paused ? AppColors.orangeLight : null,
                     child: SwitchListTile(
                       title: Text(
                         _paused ? 'No disponible' : 'Disponible',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: _paused ? Colors.orange[800] : Colors.green[700],
+                          color: _paused ? AppColors.orange : AppColors.success,
                         ),
                       ),
                       subtitle: Text(
@@ -284,15 +279,15 @@ class _NotificationPreferencesScreenState
                             : 'Recibirás notificaciones según tus preferencias',
                         style: TextStyle(
                           fontSize: 13,
-                          color: _paused ? Colors.orange[700] : Colors.grey[600],
+                          color: _paused ? AppColors.orange : AppColors.textMuted,
                         ),
                       ),
                       value: !_paused,
                       onChanged: (value) => setState(() => _paused = !value),
-                      activeColor: Colors.green,
+                      activeColor: AppColors.success,
                       secondary: Icon(
                         _paused ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                        color: _paused ? Colors.orange : Colors.green,
+                        color: _paused ? AppColors.orange : AppColors.success,
                         size: 32,
                       ),
                     ),
@@ -329,13 +324,13 @@ class _NotificationPreferencesScreenState
                                 child: Row(
                                   children: [
                                     const Icon(Icons.check_circle,
-                                        color: Colors.green, size: 16),
+                                        color: AppColors.success, size: 16),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Ubicacion guardada${_homeBarrio != null ? ' ($_homeBarrio)' : ''}',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey[600],
+                                        color: AppColors.textMuted,
                                       ),
                                     ),
                                   ],
@@ -370,12 +365,12 @@ class _NotificationPreferencesScreenState
                               avatar: Icon(icon,
                                   size: 18,
                                   color: selected
-                                      ? const Color(0xFFE86A33)
-                                      : Colors.grey),
+                                      ? AppColors.navyDark
+                                      : AppColors.textMuted),
                               label: Text(label),
                               selected: selected,
-                              selectedColor: const Color(0xFFFFF0E8),
-                              checkmarkColor: const Color(0xFFE86A33),
+                              selectedColor: AppColors.navyVeryLight,
+                              checkmarkColor: AppColors.navyDark,
                               onSelected: (v) {
                                 setState(() {
                                   if (v) {
@@ -410,21 +405,21 @@ class _NotificationPreferencesScreenState
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('5 min',
+                                  const Text('5 min',
                                       style: TextStyle(
-                                          color: Colors.grey[600],
+                                          color: AppColors.textMuted,
                                           fontSize: 12)),
                                   Text(
                                     '$_maxTravelMinutes min',
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFFE86A33),
+                                      color: AppColors.navyDark,
                                     ),
                                   ),
-                                  Text('60 min',
+                                  const Text('60 min',
                                       style: TextStyle(
-                                          color: Colors.grey[600],
+                                          color: AppColors.textMuted,
                                           fontSize: 12)),
                                 ],
                               ),
@@ -433,7 +428,7 @@ class _NotificationPreferencesScreenState
                                 min: 5,
                                 max: 60,
                                 divisions: 11,
-                                activeColor: const Color(0xFFE86A33),
+                                activeColor: AppColors.orange,
                                 onChanged: (v) {
                                   setState(() =>
                                       _maxTravelMinutes = v.round());
@@ -457,7 +452,7 @@ class _NotificationPreferencesScreenState
                         subtitle: const Text(
                             'Popups cuando hay nuevos trabajos o aplicaciones'),
                         value: _inAppEnabled,
-                        activeColor: const Color(0xFFE86A33),
+                        activeColor: AppColors.orange,
                         onChanged: (v) =>
                             setState(() => _inAppEnabled = v),
                       ),
@@ -466,7 +461,7 @@ class _NotificationPreferencesScreenState
                         subtitle: const Text(
                             'Reproducir un sonido con cada notificacion'),
                         value: _soundEnabled,
-                        activeColor: const Color(0xFFE86A33),
+                        activeColor: AppColors.orange,
                         onChanged: _inAppEnabled
                             ? (v) => setState(() => _soundEnabled = v)
                             : null,
@@ -486,7 +481,7 @@ class _NotificationPreferencesScreenState
                             ? 'Recibir SMS para trabajos nuevos'
                             : 'Disponible con suscripcion premium'),
                         value: _smsEnabled,
-                        activeColor: const Color(0xFFE86A33),
+                        activeColor: AppColors.orange,
                         onChanged: _isPremium
                             ? (v) => setState(() => _smsEnabled = v)
                             : null,
@@ -497,7 +492,7 @@ class _NotificationPreferencesScreenState
                             ? 'Recibir emails para trabajos nuevos'
                             : 'Disponible con suscripcion premium'),
                         value: _emailEnabled,
-                        activeColor: const Color(0xFFE86A33),
+                        activeColor: AppColors.orange,
                         onChanged: _isPremium
                             ? (v) => setState(() => _emailEnabled = v)
                             : null,
@@ -508,7 +503,7 @@ class _NotificationPreferencesScreenState
                             ? 'Recibir mensajes de WhatsApp'
                             : 'Disponible con suscripcion premium'),
                         value: _whatsappEnabled,
-                        activeColor: const Color(0xFFE86A33),
+                        activeColor: AppColors.orange,
                         onChanged: _isPremium
                             ? (v) => setState(() => _whatsappEnabled = v)
                             : null,
@@ -519,19 +514,19 @@ class _NotificationPreferencesScreenState
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
+                              color: AppColors.orangeLight,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               children: [
                                 const Icon(Icons.lock_outline,
-                                    color: Color(0xFFE86A33), size: 20),
+                                    color: AppColors.navyDark, size: 20),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
+                                  child: const Text(
                                     'Las notificaciones por SMS, email y WhatsApp son una funcion premium.',
                                     style: TextStyle(
-                                      color: Colors.orange[800],
+                                      color: AppColors.orange,
                                       fontSize: 13,
                                     ),
                                   ),
@@ -565,8 +560,8 @@ class _NotificationPreferencesScreenState
                             return FilterChip(
                               label: Text(name),
                               selected: selected,
-                              selectedColor: const Color(0xFFFFF0E8),
-                              checkmarkColor: const Color(0xFFE86A33),
+                              selectedColor: AppColors.navyVeryLight,
+                              checkmarkColor: AppColors.navyDark,
                               onSelected: (v) {
                                 setState(() {
                                   if (v) {
@@ -606,16 +601,6 @@ class _NotificationPreferencesScreenState
                             },
                             icon: const Icon(Icons.edit_calendar),
                             label: const Text('Editar mi calendario'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFE86A33),
-                              side: const BorderSide(
-                                  color: Color(0xFFE86A33), width: 1.5),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
                           ),
                         ),
                       ),
@@ -642,11 +627,6 @@ class _NotificationPreferencesScreenState
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE86A33)),
-                            ),
                           ),
                         ),
                       ),
@@ -663,11 +643,6 @@ class _NotificationPreferencesScreenState
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFFE86A33)),
-                            ),
                           ),
                         ),
                       ),
@@ -680,14 +655,6 @@ class _NotificationPreferencesScreenState
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE86A33),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: _isSaving
                           ? const SizedBox(
                               width: 20,
@@ -718,13 +685,13 @@ class _NotificationPreferencesScreenState
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.navyShadow,
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -735,7 +702,7 @@ class _NotificationPreferencesScreenState
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Row(
               children: [
-                Icon(icon, color: const Color(0xFFE86A33), size: 22),
+                Icon(icon, color: AppColors.navyDark, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   title,
@@ -752,9 +719,9 @@ class _NotificationPreferencesScreenState
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 subtitle,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                 ),
               ),
             ),

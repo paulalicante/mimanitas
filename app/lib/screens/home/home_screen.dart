@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../jobs/post_job_screen.dart';
 import '../jobs/my_jobs_screen.dart';
@@ -17,6 +18,7 @@ import '../../services/message_notification_service.dart';
 import '../../services/job_notification_service.dart';
 import '../../services/payment_service.dart';
 import '../../utils/notification_sound.dart';
+import '../../utils/job_matching.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,7 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Dashboard data (helpers)
   bool _dashboardLoading = true;
   List<Map<String, dynamic>> _availabilitySlots = [];
-  int _openJobCount = 0;
+  int _matchedJobCount = 0;
+  int _nearbyJobCount = 0;
   List<Map<String, dynamic>> _upcomingJobs = [];
   Map<String, dynamic>? _notificationPrefs;
   Map<String, dynamic>? _profileLocation;
@@ -198,23 +201,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _dashboardLoading = true);
 
-    final results = await Future.wait<dynamic>([
+    // Phase 1: Load prefs, profile, availability (needed for job classification)
+    final phase1 = await Future.wait<dynamic>([
       _loadAvailabilityData(userId),
-      _loadOpenJobCount(userId),
-      _loadUpcomingJobs(userId),
       _loadPreferencesData(userId),
+    ]);
+
+    if (!mounted) return;
+    _availabilitySlots = phase1[0] as List<Map<String, dynamic>>;
+    final prefsResult = phase1[1] as Map<String, dynamic>;
+    _notificationPrefs = prefsResult['prefs'] as Map<String, dynamic>?;
+    _profileLocation = prefsResult['profile'] as Map<String, dynamic>?;
+
+    // Phase 2: Load job counts (uses phase 1 data) + independent loaders
+    final phase2 = await Future.wait<dynamic>([
+      _loadJobCounts(userId),
+      _loadUpcomingJobs(userId),
       _loadBalance(),
     ]);
 
     if (!mounted) return;
     setState(() {
-      _availabilitySlots = results[0] as List<Map<String, dynamic>>;
-      _openJobCount = results[1] as int;
-      _upcomingJobs = results[2] as List<Map<String, dynamic>>;
-      final prefsResult = results[3] as Map<String, dynamic>;
-      _notificationPrefs = prefsResult['prefs'] as Map<String, dynamic>?;
-      _profileLocation = prefsResult['profile'] as Map<String, dynamic>?;
-      _balance = results[4] as HelperBalance?;
+      final counts = phase2[0] as Map<String, int>;
+      _matchedJobCount = counts['matched'] ?? 0;
+      _nearbyJobCount = counts['nearby'] ?? 0;
+      _upcomingJobs = phase2[1] as List<Map<String, dynamic>>;
+      _balance = phase2[2] as HelperBalance?;
       _dashboardLoading = false;
     });
   }
@@ -233,11 +245,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<int> _loadOpenJobCount(String userId) async {
+  Future<Map<String, int>> _loadJobCounts(String userId) async {
     try {
       final openJobs = await supabase
           .from('jobs')
-          .select('id')
+          .select('id, skill_id, price_type, price_amount, location_lat, location_lng, '
+                  'scheduled_date, scheduled_time, is_flexible')
           .eq('status', 'open');
 
       final appliedJobs = await supabase
@@ -246,9 +259,56 @@ class _HomeScreenState extends State<HomeScreen> {
           .eq('applicant_id', userId);
 
       final appliedJobIds = appliedJobs.map((a) => a['job_id']).toSet();
-      return openJobs.where((j) => !appliedJobIds.contains(j['id'])).length;
+      final unappliedJobs =
+          openJobs.where((j) => !appliedJobIds.contains(j['id'])).toList();
+
+      // Extract helper prefs for classification
+      final helperLat = (_profileLocation?['location_lat'] as num?)?.toDouble();
+      final helperLng = (_profileLocation?['location_lng'] as num?)?.toDouble();
+      final transportModes = _notificationPrefs != null
+          ? List<String>.from(_notificationPrefs!['transport_modes'] ?? [])
+          : <String>[];
+      final maxTravelMinutes =
+          _notificationPrefs?['max_travel_minutes'] as int? ?? 30;
+      final notifySkills = _notificationPrefs != null
+          ? List<String>.from(_notificationPrefs!['notify_skills'] ?? [])
+          : <String>[];
+      final minPriceAmount =
+          (_notificationPrefs?['min_price_amount'] as num?)?.toDouble();
+      final minHourlyRate =
+          (_notificationPrefs?['min_hourly_rate'] as num?)?.toDouble();
+
+      int matched = 0;
+      int nearby = 0;
+
+      for (final job in unappliedJobs) {
+        final result = classifyJob(
+          job: job,
+          helperLat: helperLat,
+          helperLng: helperLng,
+          transportModes: transportModes,
+          maxTravelMinutes: maxTravelMinutes,
+          notifySkills: notifySkills,
+          minPriceAmount: minPriceAmount,
+          minHourlyRate: minHourlyRate,
+          availabilitySlots: _availabilitySlots,
+        );
+
+        switch (result) {
+          case JobMatchResult.matched:
+            matched++;
+            break;
+          case JobMatchResult.nearbyOnly:
+            nearby++;
+            break;
+          case JobMatchResult.tooFar:
+            break; // excluded entirely
+        }
+      }
+
+      return {'matched': matched, 'nearby': nearby};
     } catch (e) {
-      return 0;
+      return {'matched': 0, 'nearby': 0};
     }
   }
 
@@ -330,17 +390,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFFFFBF5),
         body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFE86A33),
-          ),
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       body: SingleChildScrollView(
         child: Center(
           child: Column(
@@ -367,15 +423,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFE86A33),
+                              color: AppColors.navyDark,
                             ),
                           ),
                           if (_userName != null && _userName!.isNotEmpty)
                             Text(
                               'Hola, $_userName',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey[600],
+                                color: AppColors.textMuted,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -396,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           icon: const Icon(Icons.search, size: 22),
-                          color: const Color(0xFFE86A33),
+                          color: AppColors.navyDark,
                           tooltip: 'Buscar trabajos',
                         ),
                       // Messages button with badge
@@ -420,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: const BoxDecoration(
-                                    color: Colors.red,
+                                    color: AppColors.orange,
                                     shape: BoxShape.circle,
                                   ),
                                   constraints: const BoxConstraints(
@@ -440,12 +496,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                           ],
                         ),
-                        color: const Color(0xFFE86A33),
+                        color: AppColors.navyDark,
                         tooltip: 'Mensajes',
                       ),
                       // Main menu
                       PopupMenuButton<String>(
-                        icon: const Icon(Icons.menu, color: Color(0xFFE86A33)),
+                        icon: const Icon(Icons.menu, color: AppColors.navyDark),
                         tooltip: 'Menú',
                         onSelected: (value) async {
                           switch (value) {
@@ -515,7 +571,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             value: 'profile',
                             child: Row(
                               children: [
-                                const Icon(Icons.person_outline, size: 20, color: Color(0xFFE86A33)),
+                                const Icon(Icons.person_outline, size: 20, color: AppColors.navyDark),
                                 const SizedBox(width: 12),
                                 Text('Perfil${_phoneVerified ? ' ✓' : ''}'),
                               ],
@@ -526,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'my_jobs',
                               child: Row(
                                 children: [
-                                  Icon(Icons.work_outline, size: 20, color: Color(0xFFE86A33)),
+                                  Icon(Icons.work_outline, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Mis trabajos'),
                                 ],
@@ -537,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'browse_jobs',
                               child: Row(
                                 children: [
-                                  Icon(Icons.search, size: 20, color: Color(0xFFE86A33)),
+                                  Icon(Icons.search, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Buscar trabajos'),
                                 ],
@@ -547,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'availability',
                               child: Row(
                                 children: [
-                                  Icon(Icons.calendar_month, size: 20, color: Color(0xFFE86A33)),
+                                  Icon(Icons.calendar_month, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Publicar disponibilidad'),
                                 ],
@@ -557,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'my_applications',
                               child: Row(
                                 children: [
-                                  Icon(Icons.assignment_outlined, size: 20, color: Color(0xFFE86A33)),
+                                  Icon(Icons.assignment_outlined, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Mis aplicaciones'),
                                 ],
@@ -567,7 +623,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'earnings',
                               child: Row(
                                 children: [
-                                  Icon(Icons.account_balance_wallet_outlined, size: 20, color: Color(0xFFE86A33)),
+                                  Icon(Icons.account_balance_wallet_outlined, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Ganancias'),
                                 ],
@@ -577,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'notifications',
                               child: Row(
                                 children: [
-                                  Icon(Icons.tune, size: 20, color: Color(0xFFE86A33)),
+                                  Icon(Icons.tune, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Preferencias'),
                                 ],
@@ -589,7 +645,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             value: 'debug',
                             child: Row(
                               children: [
-                                Icon(Icons.bug_report, size: 20, color: Colors.grey),
+                                Icon(Icons.bug_report, size: 20, color: AppColors.textMuted),
                                 SizedBox(width: 12),
                                 Text('Debug SMS'),
                               ],
@@ -600,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             value: 'logout',
                             child: Row(
                               children: [
-                                Icon(Icons.logout, size: 20, color: Color(0xFFE86A33)),
+                                Icon(Icons.logout, size: 20, color: AppColors.navyDark),
                                 SizedBox(width: 12),
                                 Text('Salir'),
                               ],
@@ -628,13 +684,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding:
                           const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF0E8),
+                        color: AppColors.goldLight,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
                         '🚀 Próximamente en Alicante',
                         style: TextStyle(
-                          color: Color(0xFFE86A33),
+                          color: AppColors.warning,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -667,7 +723,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
                             fontStyle: FontStyle.italic,
-                            color: Color(0xFFE86A33),
+                            color: AppColors.orange,
                             height: 1.1,
                           ),
                         ),
@@ -682,11 +738,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    Text(
+                    const Text(
                       'Conecta con vecinos que necesitan una mano — o ofrece tus habilidades cuando tengas tiempo libre. Sin agencias, sin intermediarios.',
                       style: TextStyle(
                         fontSize: 18,
-                        color: Colors.grey[600],
+                        color: AppColors.textMuted,
                         height: 1.6,
                       ),
                       textAlign: TextAlign.center,
@@ -741,13 +797,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
                 padding: const EdgeInsets.all(48),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: const Color(0xFFE86A33).withOpacity(0.1),
+                      color: AppColors.navyShadow,
                       blurRadius: 24,
-                      offset: const Offset(0, 4),
+                      offset: Offset(0, 4),
                     ),
                   ],
                 ),
@@ -761,10 +817,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
+                    const Text(
                       'Publica un trabajo y encuentra manitas en tu barrio',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: AppColors.textMuted,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -780,12 +836,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE86A33),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          minimumSize: const Size(double.infinity, 48),
                         ),
                         child: const Text(
                           'Publicar un trabajo',
@@ -849,15 +900,15 @@ class _HomeScreenState extends State<HomeScreen> {
             // Footer
             Container(
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Colors.grey[200]!),
+                  top: BorderSide(color: AppColors.divider),
                 ),
               ),
-              child: Text(
+              child: const Text(
                 'Hecho con 🔧 en Alicante',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -873,7 +924,7 @@ class _HomeScreenState extends State<HomeScreen> {
             context: context,
             builder: (context) => Container(
               height: 400,
-              color: Colors.black87,
+              color: AppColors.navyDarker,
               child: Column(
                 children: [
                   Padding(
@@ -927,7 +978,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-        backgroundColor: const Color(0xFFE86A33),
         child: const Icon(Icons.bug_report),
       ),
     );
@@ -940,7 +990,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Padding(
         padding: EdgeInsets.all(48),
         child: Center(
-          child: CircularProgressIndicator(color: Color(0xFFE86A33)),
+          child: CircularProgressIndicator(),
         ),
       );
     }
@@ -981,13 +1031,13 @@ class _HomeScreenState extends State<HomeScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: const Color(0xFFE86A33).withOpacity(0.08),
+              color: AppColors.navyShadow,
               blurRadius: 16,
-              offset: const Offset(0, 3),
+              offset: Offset(0, 3),
             ),
           ],
         ),
@@ -996,7 +1046,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, color: const Color(0xFFE86A33), size: 22),
+                Icon(icon, color: AppColors.navyDark, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(title, style: const TextStyle(
@@ -1035,7 +1085,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildDashboardCard(
       icon: Icons.calendar_month,
       title: 'Mi disponibilidad',
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFE86A33)),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.navyLight),
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const AvailabilityScreen()),
@@ -1043,9 +1093,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadDashboardData();
       },
       child: _availabilitySlots.isEmpty
-          ? Text(
+          ? const Text(
               'No has configurado tu disponibilidad. Toca para empezar.',
-              style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1057,30 +1107,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(dayAbbrevs[i], style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: hasSlots ? const Color(0xFFE86A33) : Colors.grey[400],
+                        color: hasSlots ? AppColors.navyDark : AppColors.textMuted,
                       )),
                       const SizedBox(height: 4),
                       Container(
                         width: 32, height: 32,
                         decoration: BoxDecoration(
-                          color: hasSlots ? const Color(0xFFFFF0E8) : Colors.grey[100],
+                          color: hasSlots ? AppColors.navyVeryLight : AppColors.background,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: hasSlots
-                              ? const Icon(Icons.check, size: 16, color: Color(0xFFE86A33))
-                              : Text('-', style: TextStyle(color: Colors.grey[400])),
+                              ? const Icon(Icons.check, size: 16, color: AppColors.navyDark)
+                              : const Text('-', style: TextStyle(color: AppColors.textMuted)),
                         ),
                       ),
                       if (hasSlots) ...[
                         const SizedBox(height: 2),
                         ...slotsByDisplayDay[i]!.take(2).map((s) => Text(
                           s,
-                          style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                          style: const TextStyle(fontSize: 9, color: AppColors.textMuted),
                         )),
                         if (slotsByDisplayDay[i]!.length > 2)
                           Text('+${slotsByDisplayDay[i]!.length - 2}',
-                            style: TextStyle(fontSize: 9, color: Colors.grey[500])),
+                            style: const TextStyle(fontSize: 9, color: AppColors.textMuted)),
                       ],
                     ],
                   ),
@@ -1094,7 +1144,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildDashboardCard(
       icon: Icons.work_outline,
       title: 'Trabajos disponibles',
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFE86A33)),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.navyLight),
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const BrowseJobsScreen()),
@@ -1102,22 +1152,42 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadDashboardData();
       },
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
           Text(
-            '$_openJobCount',
+            '$_matchedJobCount',
             style: const TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.bold,
-              color: Color(0xFFE86A33),
+              color: AppColors.navyDark,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              _openJobCount == 1
-                  ? 'trabajo disponible'
-                  : 'trabajos disponibles',
-              style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'para ti',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.navyDark,
+                  ),
+                ),
+                if (_nearbyJobCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '$_nearbyJobCount mas en tu zona',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -1137,7 +1207,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _loadDashboardData();
         },
         child: const Text('Ver todos',
-          style: TextStyle(color: Color(0xFFE86A33), fontSize: 13, fontWeight: FontWeight.w600)),
+          style: TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.w600)),
       ),
       child: Column(
         children: _upcomingJobs.take(3).map((app) {
@@ -1172,12 +1242,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (scheduledDate != null)
                               _formatJobDate(scheduledDate, scheduledTime),
                           ].join(' — '),
-                          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                          style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+                  const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
                 ],
               ),
             ),
@@ -1208,7 +1278,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildDashboardCard(
       icon: Icons.tune,
       title: 'Preferencias',
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFE86A33)),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.navyLight),
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const NotificationPreferencesScreen()),
@@ -1223,11 +1293,11 @@ class _HomeScreenState extends State<HomeScreen> {
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.15),
+                color: AppColors.orangeLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text('Notificaciones pausadas',
-                style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13)),
+                style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.bold, fontSize: 13)),
             ),
           if (barrio != null)
             _buildPrefRow(Icons.home, barrio),
@@ -1251,10 +1321,10 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.grey[500]),
+          Icon(icon, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 8),
           Flexible(child: Text(text,
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]))),
+            style: const TextStyle(fontSize: 13, color: AppColors.textMuted))),
         ],
       ),
     );
@@ -1264,7 +1334,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return _buildDashboardCard(
       icon: Icons.account_balance_wallet_outlined,
       title: 'Ganancias',
-      trailing: const Icon(Icons.chevron_right, color: Color(0xFFE86A33)),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.navyLight),
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const EarningsScreen()),
@@ -1272,13 +1342,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadDashboardData();
       },
       child: _balance == null
-          ? Text('Configura tu cuenta de pagos para empezar',
-              style: TextStyle(fontSize: 13, color: Colors.grey[500]))
+          ? const Text('Configura tu cuenta de pagos para empezar',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted))
           : Row(
               children: [
-                _buildBalancePill('Disponible', _balance!.formattedAvailable, Colors.green),
+                _buildBalancePill('Disponible', _balance!.formattedAvailable, AppColors.success),
                 const SizedBox(width: 12),
-                _buildBalancePill('Pendiente', _balance!.formattedPending, Colors.orange),
+                _buildBalancePill('Pendiente', _balance!.formattedPending, AppColors.gold),
               ],
             ),
     );
@@ -1313,13 +1383,13 @@ class _HomeScreenState extends State<HomeScreen> {
       width: 280,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0xFFE86A33).withOpacity(0.1),
+            color: AppColors.navyShadow,
             blurRadius: 24,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -1330,7 +1400,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 40,
             height: 40,
             decoration: const BoxDecoration(
-              color: Color(0xFFE86A33),
+              color: AppColors.navyDark,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -1355,8 +1425,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           Text(
             description,
-            style: TextStyle(
-              color: Colors.grey[600],
+            style: const TextStyle(
+              color: AppColors.textMuted,
               fontSize: 15,
               height: 1.5,
             ),
@@ -1392,8 +1462,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    color: Colors.grey[600],
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
                     fontSize: 14,
                     height: 1.4,
                   ),

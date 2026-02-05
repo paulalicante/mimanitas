@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../../widgets/places_autocomplete_field.dart';
 import '../auth/phone_verification_screen.dart';
@@ -137,16 +138,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
       firstDate: now,
       lastDate: now.add(const Duration(days: 90)),
       locale: const Locale('es', 'ES'),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE86A33),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (date != null) {
       setState(() => _selectedDate = date);
@@ -157,16 +148,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
     final time = await showTimePicker(
       context: context,
       initialTime: _selectedTime ?? const TimeOfDay(hour: 10, minute: 0),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE86A33),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (time != null) {
       setState(() => _selectedTime = time);
@@ -229,7 +210,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Telefono verificado'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
           await _postJob();
@@ -262,7 +243,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
             SizedBox(height: 12),
             Text(
               'Esto permite que los manitas se pongan en contacto contigo cuando apliquen.',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -276,10 +257,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
               Navigator.pop(context);
               _showPhoneDialog();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Anadir telefono'),
           ),
         ],
@@ -354,7 +331,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Telefono verificado'),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.success,
                       ),
                     );
                     await _postJob();
@@ -365,16 +342,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Guardar'),
           ),
         ],
@@ -451,7 +424,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Trabajo publicado con exito!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -467,15 +440,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Publicar trabajo',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Publicar trabajo'),
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -497,7 +463,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Describe el trabajo que necesitas realizar',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 32),
 
@@ -507,13 +473,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.red[50],
+                        color: AppColors.errorLight,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red[200]!),
+                        border: Border.all(color: AppColors.errorBorder),
                       ),
                       child: Text(
                         _errorMessage!,
-                        style: TextStyle(color: Colors.red[700]),
+                        style: TextStyle(color: AppColors.error),
                       ),
                     ),
 
@@ -605,14 +571,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
                               size: 18,
                               color: isSelected
                                   ? Colors.white
-                                  : const Color(0xFFE86A33),
+                                  : AppColors.navyDark,
                             ),
                             label: Text(loc['label'] as String),
                             selected: isSelected,
-                            selectedColor: const Color(0xFFE86A33),
+                            selectedColor: AppColors.navyDark,
                             labelStyle: TextStyle(
                               color:
-                                  isSelected ? Colors.white : Colors.black87,
+                                  isSelected ? Colors.white : AppColors.textDark,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -626,16 +592,16 @@ class _PostJobScreenState extends State<PostJobScreen> {
                             size: 18,
                             color: _showAutocomplete
                                 ? Colors.white
-                                : const Color(0xFFE86A33),
+                                : AppColors.navyDark,
                           ),
                           label: const Text('Nueva'),
                           backgroundColor: _showAutocomplete
-                              ? const Color(0xFFE86A33)
+                              ? AppColors.navyDark
                               : null,
                           labelStyle: TextStyle(
                             color: _showAutocomplete
                                 ? Colors.white
-                                : Colors.black87,
+                                : AppColors.textDark,
                             fontWeight: _showAutocomplete
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -651,16 +617,16 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF0E8),
+                          color: AppColors.orangeLight,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color(0xFFE86A33).withOpacity(0.3),
+                            color: AppColors.orange.withOpacity(0.3),
                           ),
                         ),
                         child: Row(
                           children: [
                             const Icon(Icons.location_on,
-                                color: Color(0xFFE86A33), size: 20),
+                                color: AppColors.orange, size: 20),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -715,7 +681,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         controlAffinity: ListTileControlAffinity.leading,
                         contentPadding: EdgeInsets.zero,
                         dense: true,
-                        activeColor: const Color(0xFFE86A33),
                       ),
                       if (_saveNewAddress)
                         Padding(
@@ -745,7 +710,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       padding: const EdgeInsets.only(top: 4, left: 12),
                       child: Text(
                         'Selecciona una direccion',
-                        style: TextStyle(fontSize: 12, color: Colors.red[700]),
+                        style: TextStyle(fontSize: 12, color: AppColors.error),
                       ),
                     ),
 
@@ -754,7 +719,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       padding: const EdgeInsets.only(top: 4, left: 4),
                       child: Text(
                         'Zona: $_selectedBarrio',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                       ),
                     ),
                   const SizedBox(height: 24),
@@ -773,7 +738,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     subtitle: const Text(
                         'Sin fecha ni hora fija, a convenir con el manitas'),
                     value: _isFlexible,
-                    activeColor: const Color(0xFFE86A33),
                     onChanged: (v) => setState(() => _isFlexible = v),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -800,8 +764,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                     : 'Seleccionar',
                                 style: TextStyle(
                                   color: _selectedDate != null
-                                      ? Colors.black
-                                      : Colors.grey[600],
+                                      ? AppColors.textDark
+                                      : AppColors.textMuted,
                                 ),
                               ),
                             ),
@@ -824,8 +788,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                     : 'Seleccionar',
                                 style: TextStyle(
                                   color: _selectedTime != null
-                                      ? Colors.black
-                                      : Colors.grey[600],
+                                      ? AppColors.textDark
+                                      : AppColors.textMuted,
                                 ),
                               ),
                             ),
@@ -871,7 +835,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           groupValue: _priceType,
                           onChanged: (value) =>
                               setState(() => _priceType = value!),
-                          activeColor: const Color(0xFFE86A33),
+                          activeColor: AppColors.orange,
                         ),
                       ),
                       Expanded(
@@ -881,7 +845,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           groupValue: _priceType,
                           onChanged: (value) =>
                               setState(() => _priceType = value!),
-                          activeColor: const Color(0xFFE86A33),
+                          activeColor: AppColors.orange,
                         ),
                       ),
                     ],
@@ -915,8 +879,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _submitJob,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE86A33),
-                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

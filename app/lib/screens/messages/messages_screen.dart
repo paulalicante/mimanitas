@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import 'chat_screen.dart';
 
@@ -131,21 +132,12 @@ class _MessagesScreenState extends State<MessagesScreen> {
     final user = supabase.auth.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Mensajes',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Mensajes'),
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE86A33),
-              ),
+              child: CircularProgressIndicator(),
             )
           : _conversations.isEmpty
               ? Center(
@@ -161,14 +153,14 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         'No tienes mensajes todavía',
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey[600],
+                          color: AppColors.textMuted,
                         ),
                       ),
                     ],
                   ),
                 )
               : RefreshIndicator(
-                  color: const Color(0xFFE86A33),
+                  color: AppColors.orange,
                   onRefresh: _loadConversations,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -202,7 +194,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                             vertical: 12,
                           ),
                           leading: CircleAvatar(
-                            backgroundColor: const Color(0xFFE86A33),
+                            backgroundColor: AppColors.navyDark,
                             child: Text(
                               otherUserName.isNotEmpty
                                   ? otherUserName[0].toUpperCase()
@@ -230,7 +222,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                   DateFormat('HH:mm').format(lastMessageTime),
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[600],
+                                    color: AppColors.textMuted,
                                   ),
                                 ),
                             ],
@@ -244,7 +236,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                   job['title'] ?? '',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey[700],
+                                    color: AppColors.textDark,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -260,7 +252,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                         'Tú: ',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey[600],
+                                          color: AppColors.textMuted,
                                           fontWeight: unreadCount > 0
                                               ? FontWeight.bold
                                               : FontWeight.normal,
@@ -271,7 +263,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                         lastMessageText,
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey[600],
+                                          color: AppColors.textMuted,
                                           fontWeight: unreadCount > 0
                                               ? FontWeight.bold
                                               : FontWeight.normal,
@@ -289,7 +281,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               ? Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFE86A33),
+                                    color: AppColors.orange,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Text(

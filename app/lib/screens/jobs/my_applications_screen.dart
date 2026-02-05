@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import 'job_detail_screen.dart';
 import '../reviews/submit_review_screen.dart';
@@ -117,12 +118,12 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'accepted':
-        return Colors.green;
+        return AppColors.success;
       case 'rejected':
-        return Colors.red;
+        return AppColors.error;
       case 'pending':
       default:
-        return Colors.blue;
+        return AppColors.info;
     }
   }
 
@@ -167,7 +168,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Ya has dejado una reseña para este trabajo'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.orange,
             ),
           );
         }
@@ -195,7 +196,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -250,7 +251,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al abrir conversación: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -262,15 +263,10 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
     final filteredApps = _filteredApplications;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Mis aplicaciones',
-          style: TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
       ),
       body: Column(
         children: [
@@ -319,9 +315,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFE86A33),
-                    ),
+                    child: CircularProgressIndicator(),
                   )
                 : filteredApps.isEmpty
                     ? Center(
@@ -343,7 +337,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                           : 'No hay aplicaciones ${_getStatusText(_filterStatus).toLowerCase()}',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.grey[600],
+                                color: AppColors.textMuted,
                               ),
                             ),
                           ],
@@ -351,7 +345,6 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                       )
                     : RefreshIndicator(
                         onRefresh: _loadApplications,
-                        color: const Color(0xFFE86A33),
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: filteredApps.length,
@@ -447,7 +440,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                             style: const TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
-                                              color: Color(0xFFE86A33),
+                                              color: AppColors.orange,
                                             ),
                                           ),
                                         ],
@@ -462,13 +455,13 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                             vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFFFF0E8),
+                                            color: AppColors.navyVeryLight,
                                             borderRadius: BorderRadius.circular(12),
                                           ),
                                           child: Text(
                                             '$skillIcon $skillName',
                                             style: const TextStyle(
-                                              color: Color(0xFFE86A33),
+                                              color: AppColors.navyDark,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -480,7 +473,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                       Text(
                                         job['description'],
                                         style: TextStyle(
-                                          color: Colors.grey[700],
+                                          color: AppColors.textMuted,
                                           fontSize: 15,
                                           height: 1.4,
                                         ),
@@ -495,22 +488,22 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                           Icon(
                                             Icons.location_on,
                                             size: 16,
-                                            color: Colors.grey[600],
+                                            color: AppColors.textMuted,
                                           ),
                                           const SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
                                               job['location_address'] ?? 'Sin ubicación',
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
+                                              style: const TextStyle(
+                                                color: AppColors.textMuted,
                                                 fontSize: 14,
                                               ),
                                             ),
                                           ),
                                           Text(
                                             '• $posterName',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
+                                            style: const TextStyle(
+                                              color: AppColors.textMuted,
                                               fontSize: 14,
                                             ),
                                           ),
@@ -533,11 +526,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                                 icon: const Icon(Icons.message, size: 18),
                                                 label: const Text('Mensaje'),
                                                 style: OutlinedButton.styleFrom(
-                                                  foregroundColor: const Color(0xFFE86A33),
                                                   padding: const EdgeInsets.symmetric(vertical: 12),
-                                                  side: const BorderSide(
-                                                    color: Color(0xFFE86A33),
-                                                  ),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius: BorderRadius.circular(8),
                                                   ),
@@ -552,38 +541,38 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                             width: double.infinity,
                                             padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(0.1),
+                                              color: AppColors.successLight,
                                               borderRadius: BorderRadius.circular(8),
                                               border: Border.all(
-                                                color: Colors.green.withOpacity(0.3),
+                                                color: AppColors.successBorder,
                                               ),
                                             ),
                                             child: Row(
                                               children: [
-                                                Icon(
+                                                const Icon(
                                                   Icons.phone,
                                                   size: 18,
-                                                  color: Colors.green[700],
+                                                  color: AppColors.success,
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Column(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
-                                                    Text(
+                                                    const Text(
                                                       'Contacta con el cliente',
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight: FontWeight.w600,
-                                                        color: Colors.green[700],
+                                                        color: AppColors.success,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 2),
                                                     Text(
                                                       posterPhone,
-                                                      style: TextStyle(
+                                                      style: const TextStyle(
                                                         fontSize: 15,
                                                         fontWeight: FontWeight.bold,
-                                                        color: Colors.green[900],
+                                                        color: AppColors.success,
                                                       ),
                                                     ),
                                                   ],
@@ -605,13 +594,13 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: hasReviewed
-                                                ? Colors.green.withOpacity(0.1)
-                                                : Colors.orange.withOpacity(0.1),
+                                                ? AppColors.successLight
+                                                : AppColors.orangeLight,
                                             borderRadius: BorderRadius.circular(8),
                                             border: Border.all(
                                               color: hasReviewed
-                                                  ? Colors.green.withOpacity(0.3)
-                                                  : Colors.orange.withOpacity(0.3),
+                                                  ? AppColors.successBorder
+                                                  : AppColors.orange.withOpacity(0.3),
                                             ),
                                           ),
                                           child: Row(
@@ -620,7 +609,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                               Icon(
                                                 hasReviewed ? Icons.check_circle : Icons.rate_review,
                                                 size: 16,
-                                                color: hasReviewed ? Colors.green[700] : Colors.orange[700],
+                                                color: hasReviewed ? AppColors.success : AppColors.orange,
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
@@ -628,7 +617,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                                 style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
-                                                  color: hasReviewed ? Colors.green[700] : Colors.orange[700],
+                                                  color: hasReviewed ? AppColors.success : AppColors.orange,
                                                 ),
                                               ),
                                             ],
@@ -648,8 +637,6 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                               icon: const Icon(Icons.rate_review, size: 18),
                                               label: const Text('Dejar reseña'),
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: const Color(0xFFE86A33),
-                                                foregroundColor: Colors.white,
                                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius: BorderRadius.circular(8),
@@ -683,17 +670,17 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
           _filterStatus = value;
         });
       },
-      selectedColor: const Color(0xFFE86A33),
+      selectedColor: AppColors.navyDark,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFFE86A33),
+        color: isSelected ? Colors.white : AppColors.navyDark,
         fontWeight: FontWeight.w600,
       ),
-      backgroundColor: const Color(0xFFFFF0E8),
+      backgroundColor: AppColors.navyVeryLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? const Color(0xFFE86A33) : Colors.transparent,
+          color: isSelected ? AppColors.navyDark : Colors.transparent,
         ),
       ),
     );

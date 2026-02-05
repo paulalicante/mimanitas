@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'services/message_notification_service.dart';
@@ -48,14 +49,7 @@ class MyApp extends StatelessWidget {
         Locale('es'),
       ],
       locale: const Locale('es'),
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFE86A33), // Orange from landing page
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFFFFBF5), // Warm background
-      ),
+      theme: AppTheme.lightTheme,
       home: const AuthGate(),
     );
   }

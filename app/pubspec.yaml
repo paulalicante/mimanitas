@@ -55,6 +55,9 @@ dependencies:
   # URL launcher for Stripe onboarding redirect
   url_launcher: ^6.2.0
 
+  # Typography matching landing page (Nunito + Inter)
+  google_fonts: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

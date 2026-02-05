@@ -109,9 +109,55 @@ Under GDPR Article 6(1)(c), we can store data required for legal compliance:
 
 **Retention:** Tax data must be kept 5 years minimum (Spanish tax law). Delete after statutory period expires.
 
+## Landing Page Design (Feb 2026)
+
+**File:** `index.html` (1,477 lines of HTML/CSS/JS)
+**Live at:** https://mimanitas.me
+**Status:** Professional, polished design — complete and deployed
+
+### Color Palette:
+- Navy dark: `#1E3A5F` (primary dark backgrounds)
+- Navy light: `#2A4F7A`
+- Orange: `#E85000` (CTAs, accents)
+- Gold: `#FFB700` (highlights, badges, "gratis" banner)
+- Off-white: `#F8FAFC` (light section backgrounds)
+- Card shadow: `rgba(30, 58, 95, 0.08)`
+
+### Typography:
+- **Nunito** (headings, bold, 400-800 weight)
+- **Inter** (body text, 400-600 weight)
+
+### Page Sections (top to bottom):
+1. **Header** — Fixed nav with logo, section links, mobile hamburger menu. Turns dark on scroll.
+2. **Hero** — Slideshow of 5 background images rotating every 20s. Heading: "Tu comunidad de ayuda local". Dual CTAs: "Necesito ayuda" | "Quiero ayudar". Gold badge: "Gratis para todos hasta 31 julio 2026".
+3. **Stats Strip** — Gold bar with 4 stats: Lanzamiento Q2 2026, Empezamos en Alicante, Pago 100% seguro, Sin comisiones ocultas.
+4. **"No Greedy Rabbit"** — Dark navy section. Fat rabbit image + "El ayudante cobra el 100%. Siempre." Comparison: other platforms 20-30% vs MiManitas 0%.
+5. **"Cómo funciona"** — 3-step cards: Publica, Comparte tu tiempo, Conecta y listo.
+6. **"Hecho para todos"** — Dark navy, 2-column: Necesitas ayuda? (5 bullets) | Quieres ayudar? (5 bullets).
+7. **"Características"** — 6 feature cards: Pago en depósito, Calendario de disponibilidad, Mensajería y WhatsApp, Verificación por teléfono, 100% local, Precios transparentes.
+8. **Tech Stack** — Dark section with tech tags: Flutter, Dart, Supabase, PostgreSQL, Stripe Connect, Twilio, Deno, TypeScript, Edge Functions, WebSockets, WhatsApp, SMS, Vercel, Web3Forms.
+9. **Trust Section** — 4 trust items: Depósito seguro, Usuarios verificados, Garantía 7 días, Cumplimiento legal.
+10. **Signup/Waitlist** — White card with form: Name, Email, Message (optional). Uses Web3Forms for email delivery.
+11. **FAQ** — 6 accordion items covering pricing, escrow, availability, job types, trust, mobile.
+12. **Footer** — Logo, email (hola@mimanitas.me), ward.no link, copyright.
+
+### Design Patterns:
+- Scroll-reveal animations via IntersectionObserver with staggered 80ms delays
+- Hero slideshow with 4s opacity crossfade
+- FAQ accordion with click-to-toggle
+- Mobile-first responsive with breakpoints at 640px and 900px
+- Lazy loading for non-hero images
+
+### Key Design Decisions:
+- Navy + orange + gold palette conveys trust and warmth
+- "Fat greedy rabbit" mascot creates memorable anti-commission branding
+- Dual CTA in hero addresses both sides of the marketplace
+- Gold "gratis" badge creates urgency without feeling salesy
+- Tech stack section targets potential partners/investors
+
 ## MVP Features
 
-1. Landing page ✅ (done)
+1. Landing page ✅ (done — professional redesign Feb 2026)
 2. Sign up / login (Supabase auth)
 3. Post a need ("I need my fence painted Saturday")
 4. Post availability ("I can paint, garden, clean on weekends")
@@ -676,6 +722,40 @@ When logged in as a helper, the home screen shows 5 dashboard cards instead of t
 ### Important:
 - Adding new state variables to the home screen requires a **hot restart** (Shift+R or stop/start), not just hot reload (r)
 - Seekers see the unchanged marketing/landing page layout
+
+## GUI Alignment Plan (Feb 2026)
+
+**Goal:** Upgrade the Flutter app's GUI to match the professional look and feel of the landing page (index.html). Currently the app uses a basic Material3 orange theme while the landing page has a polished navy/orange/gold design.
+
+### Current App GUI:
+- Material3 with orange seed color (#E86A33), warm background (#FFFBF5)
+- Basic white cards with subtle orange shadows
+- No separate theme file — theming inline in main.dart
+- Functional but visually plain compared to the landing page
+
+### Target Design (match landing page):
+- Navy (#1E3A5F) + orange (#E85000) + gold (#FFB700) color palette
+- Nunito headings + Inter body text (matching landing page typography)
+- Polished card styles with navy accents
+- Professional section headers
+- Consistent spacing, shadows, and border radius
+- Trust-building visual language (badges, verification indicators)
+
+### What Needs to Change:
+- [ ] Create `app/lib/app_theme.dart` with centralized theme matching landing page colors
+- [ ] Update main.dart to use new theme
+- [ ] Restyle home screen (both helper dashboard and seeker marketing view)
+- [ ] Restyle all screen headers and navigation
+- [ ] Update card styles across all screens (jobs, messages, profile, etc.)
+- [ ] Consistent button styles (orange primary, navy secondary)
+- [ ] Typography overhaul (Nunito headings, Inter body)
+- [ ] Polish individual screens to match landing page quality level
+
+### Approach:
+- Work screen-by-screen, starting with the home screen
+- Create a shared theme first, then apply to all screens
+- Keep all existing functionality intact — visual upgrade only
+- Test on both helper and seeker views
 
 ## Notes for Claude
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import 'post_job_screen.dart';
 import 'job_applications_screen.dart';
@@ -124,7 +125,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Trabajo eliminado'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         _loadMyJobs(); // Reload list
@@ -134,7 +135,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al eliminar: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -170,7 +171,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Trabajo completado. Pago liberado al ayudante.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         _loadMyJobs();
@@ -185,7 +186,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al completar: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -231,10 +232,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE86A33),
-                  foregroundColor: Colors.white,
-                ),
                 child: const Text('Dejar reseña'),
               ),
             ],
@@ -278,7 +275,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
               Navigator.pop(context);
               _completeJob(jobId);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.green),
+            style: TextButton.styleFrom(foregroundColor: AppColors.success),
             child: const Text('Completar'),
           ),
         ],
@@ -302,7 +299,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
               Navigator.pop(context);
               _deleteJob(jobId);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Eliminar'),
           ),
         ],
@@ -358,7 +355,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al abrir conversación: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -387,38 +384,31 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'open':
-        return Colors.blue;
+        return AppColors.info;
       case 'assigned':
       case 'in_progress':
-        return Colors.orange;
+        return AppColors.orange;
       case 'completed':
-        return Colors.green;
+        return AppColors.success;
       case 'disputed':
       case 'cancelled':
-        return Colors.red;
+        return AppColors.error;
       default:
-        return Colors.grey;
+        return AppColors.textMuted;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Mis trabajos',
-          style: TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE86A33),
-              ),
+              child: CircularProgressIndicator(),
             )
           : _jobs.isEmpty
               ? Center(
@@ -430,11 +420,11 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                         style: TextStyle(fontSize: 64),
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      const Text(
                         'No has publicado trabajos todavía',
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey[600],
+                          color: AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -448,8 +438,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                           _loadMyJobs(); // Reload after posting
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE86A33),
-                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 32,
                             vertical: 16,
@@ -499,12 +487,11 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                 _filterStatus == 'active'
                                     ? 'No tienes trabajos activos'
                                     : 'No tienes trabajos completados',
-                                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                                style: const TextStyle(fontSize: 16, color: AppColors.textMuted),
                               ),
                             )
                           : RefreshIndicator(
                   onRefresh: _loadMyJobs,
-                  color: const Color(0xFFE86A33),
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _filteredJobs.length,
@@ -552,7 +539,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.green.withOpacity(0.15),
+                                          color: AppColors.success.withOpacity(0.15),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
@@ -562,13 +549,13 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                             const Icon(
                                               Icons.notifications_active,
                                               size: 14,
-                                              color: Colors.green,
+                                              color: AppColors.success,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
                                               '$pendingApps',
                                               style: const TextStyle(
-                                                color: Colors.green,
+                                                color: AppColors.success,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -603,16 +590,16 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                 if (skillName.isNotEmpty)
                                   Text(
                                     '$skillIcon $skillName',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
                                       fontSize: 14,
                                     ),
                                   ),
                                 const SizedBox(height: 8),
                                 Text(
                                   job['description'],
-                                  style: TextStyle(
-                                    color: Colors.grey[700],
+                                  style: const TextStyle(
+                                    color: AppColors.textDark,
                                     fontSize: 15,
                                   ),
                                   maxLines: 2,
@@ -621,17 +608,17 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                 const SizedBox(height: 12),
                                 Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.location_on,
                                       size: 16,
-                                      color: Colors.grey[600],
+                                      color: AppColors.textMuted,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       job['location_address'] ??
                                           'Sin ubicación',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
+                                      style: const TextStyle(
+                                        color: AppColors.textMuted,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -643,7 +630,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFFE86A33),
+                                        color: AppColors.orange,
                                       ),
                                     ),
                                   ],
@@ -660,13 +647,13 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: hasReviewed
-                                          ? Colors.green.withOpacity(0.1)
-                                          : Colors.orange.withOpacity(0.1),
+                                          ? AppColors.successLight
+                                          : AppColors.orangeLight,
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color: hasReviewed
-                                            ? Colors.green.withOpacity(0.3)
-                                            : Colors.orange.withOpacity(0.3),
+                                            ? AppColors.successBorder
+                                            : AppColors.orange.withOpacity(0.3),
                                       ),
                                     ),
                                     child: Row(
@@ -678,8 +665,8 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                               : Icons.rate_review,
                                           size: 16,
                                           color: hasReviewed
-                                              ? Colors.green[700]
-                                              : Colors.orange[700],
+                                              ? AppColors.success
+                                              : AppColors.orange,
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
@@ -690,8 +677,8 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600,
                                             color: hasReviewed
-                                                ? Colors.green[700]
-                                                : Colors.orange[700],
+                                                ? AppColors.success
+                                                : AppColors.orange,
                                           ),
                                         ),
                                       ],
@@ -713,9 +700,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                         ),
                                         icon: const Icon(Icons.message, size: 18),
                                         label: const Text('Mensaje'),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: const Color(0xFFE86A33),
-                                        ),
                                       ),
                                       const SizedBox(width: 8),
                                     ],
@@ -729,7 +713,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                             size: 18),
                                         label: const Text('Completar'),
                                         style: TextButton.styleFrom(
-                                          foregroundColor: Colors.green,
+                                          foregroundColor: AppColors.success,
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -746,10 +730,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                         icon: const Icon(Icons.rate_review,
                                             size: 18),
                                         label: const Text('Dejar reseña'),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor:
-                                              const Color(0xFFE86A33),
-                                        ),
                                       ),
                                       const SizedBox(width: 8),
                                     ],
@@ -768,10 +748,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                       },
                                       icon: const Icon(Icons.people, size: 18),
                                       label: const Text('Aplicaciones'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor:
-                                            const Color(0xFFE86A33),
-                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     TextButton.icon(
@@ -787,10 +763,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                       },
                                       icon: const Icon(Icons.edit, size: 18),
                                       label: const Text('Editar'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor:
-                                            const Color(0xFFE86A33),
-                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     TextButton.icon(
@@ -801,7 +773,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                       icon: const Icon(Icons.delete, size: 18),
                                       label: const Text('Eliminar'),
                                       style: TextButton.styleFrom(
-                                        foregroundColor: Colors.red,
+                                        foregroundColor: AppColors.error,
                                       ),
                                     ),
                                   ],
@@ -827,7 +799,6 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                 );
                 _loadMyJobs(); // Reload after posting
               },
-              backgroundColor: const Color(0xFFE86A33),
               icon: const Icon(Icons.add),
               label: const Text('Nuevo trabajo'),
             )
@@ -845,17 +816,17 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
           _filterStatus = value;
         });
       },
-      selectedColor: const Color(0xFFE86A33),
+      selectedColor: AppColors.navyDark,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : const Color(0xFFE86A33),
+        color: isSelected ? Colors.white : AppColors.navyDark,
         fontWeight: FontWeight.w600,
       ),
-      backgroundColor: const Color(0xFFFFF0E8),
+      backgroundColor: AppColors.navyVeryLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? const Color(0xFFE86A33) : Colors.transparent,
+          color: isSelected ? AppColors.navyDark : Colors.transparent,
         ),
       ),
     );

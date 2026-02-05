@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../app_theme.dart';
 import '../main.dart';
 import '../screens/jobs/job_detail_screen.dart';
 import '../screens/jobs/job_applications_screen.dart';
@@ -711,7 +712,7 @@ class JobNotificationService {
                   height: 40,
                   decoration: BoxDecoration(
                     color: isJob
-                        ? const Color(0xFFE86A33)
+                        ? AppColors.orange
                         : const Color(0xFF4CAF50),
                     shape: BoxShape.circle,
                   ),
@@ -798,7 +799,7 @@ class JobNotificationService {
             duration: const Duration(days: 1),
             action: SnackBarAction(
               label: 'Ver',
-              textColor: const Color(0xFFE86A33),
+              textColor: AppColors.orange,
               onPressed: () {
                 _navigateToNotification(notification);
               },

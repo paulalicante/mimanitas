@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../main.dart';
+import '../../app_theme.dart';
 
 class DebugSmsScreen extends StatefulWidget {
   const DebugSmsScreen({super.key});
@@ -229,10 +230,7 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFFFFBF5),
         appBar: AppBar(
-          backgroundColor: const Color(0xFFE86A33),
-          foregroundColor: Colors.white,
           title: const Text('Debug Tools'),
           bottom: const TabBar(
             indicatorColor: Colors.white,
@@ -257,8 +255,8 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: _realtimeStatus.contains('subscribed')
-                          ? Colors.green[100]
-                          : Colors.grey[200],
+                          ? AppColors.successLight
+                          : AppColors.navyVeryLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -266,8 +264,8 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: _realtimeStatus.contains('subscribed')
-                            ? Colors.green[800]
-                            : Colors.grey[800],
+                            ? AppColors.success
+                            : AppColors.textDark,
                       ),
                     ),
                   ),
@@ -279,10 +277,6 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _startRealtimeTest,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE86A33),
-                            foregroundColor: Colors.white,
-                          ),
                           child: const Text('1. Subscribe'),
                         ),
                       ),
@@ -291,7 +285,7 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                         child: ElevatedButton(
                           onPressed: _sendTestMessage,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: AppColors.info,
                             foregroundColor: Colors.white,
                           ),
                           child: const Text('2. Send Test'),
@@ -303,7 +297,7 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                   ElevatedButton(
                     onPressed: _checkRealtimeConfig,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[700],
+                      backgroundColor: AppColors.navyLight,
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('Check Config'),
@@ -314,9 +308,9 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: AppColors.infoLight,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
+                      border: Border.all(color: AppColors.infoBorder),
                     ),
                     child: const Text(
                       'Instructions:\n'
@@ -364,11 +358,6 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: _isLoading ? null : _testFunction,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE86A33),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Test SMS Function'),
@@ -381,7 +370,7 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                         labelText: 'Enter 6-digit code',
                         border: OutlineInputBorder(),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppColors.surface,
                       ),
                       keyboardType: TextInputType.number,
                       maxLength: 6,
@@ -390,7 +379,7 @@ class _DebugSmsScreenState extends State<DebugSmsScreen> {
                     ElevatedButton(
                       onPressed: _isLoading ? null : _verifyCode,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),

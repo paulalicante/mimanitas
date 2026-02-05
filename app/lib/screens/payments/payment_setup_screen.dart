@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../services/payment_service.dart';
 
 /// Screen for helpers to set up their Stripe Connect account
@@ -69,7 +70,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.error ?? 'Error desconocido'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -96,7 +97,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
               duration: const Duration(seconds: 10),
-              backgroundColor: Colors.orange[700],
+              backgroundColor: AppColors.orange,
             ),
           );
         }
@@ -110,7 +111,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.open_in_new, color: Colors.green[700]),
+            Icon(Icons.open_in_new, color: AppColors.success),
             const SizedBox(width: 12),
             const Text('Ventana abierta'),
           ],
@@ -126,7 +127,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: AppColors.infoLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Column(
@@ -134,12 +135,12 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.looks_one, color: Colors.blue, size: 20),
+                      Icon(Icons.looks_one, color: AppColors.info, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Completa la configuración en la otra ventana',
-                          style: TextStyle(color: Colors.blue[800], fontSize: 13),
+                          style: TextStyle(color: AppColors.info, fontSize: 13),
                         ),
                       ),
                     ],
@@ -147,12 +148,12 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.looks_two, color: Colors.blue, size: 20),
+                      Icon(Icons.looks_two, color: AppColors.info, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Vuelve aquí y pulsa "Actualizar" para verificar',
-                          style: TextStyle(color: Colors.blue[800], fontSize: 13),
+                          style: TextStyle(color: AppColors.info, fontSize: 13),
                         ),
                       ),
                     ],
@@ -172,12 +173,8 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
               Navigator.of(context).pop();
               _checkStatus();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-              foregroundColor: Colors.white,
-            ),
-            icon: const Icon(Icons.refresh, size: 18, color: Colors.white),
-            label: const Text('Actualizar estado', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Actualizar estado'),
           ),
         ],
       ),
@@ -187,15 +184,8 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Configurar pagos',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Configurar pagos'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -205,13 +195,10 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE86A33),
-              ),
+              child: CircularProgressIndicator(),
             )
           : RefreshIndicator(
               onRefresh: _checkStatus,
-              color: const Color(0xFFE86A33),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(24),
@@ -246,27 +233,27 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
 
     if (status.error != null) {
       icon = Icons.error_outline;
-      color = Colors.red;
+      color = AppColors.error;
       title = 'Error';
       subtitle = status.error!;
     } else if (!status.hasAccount) {
       icon = Icons.account_balance_wallet_outlined;
-      color = const Color(0xFFE86A33);
+      color = AppColors.orange;
       title = 'Opcional por ahora';
       subtitle = 'Puedes configurarlo cuando alguien quiera pagarte. Solo tarda 3 minutos.';
     } else if (status.needsAction) {
       icon = Icons.pending_actions;
-      color = Colors.orange;
+      color = AppColors.orange;
       title = 'Requiere acción';
       subtitle = status.message ?? 'Completa la configuración de Stripe';
     } else if (!status.payoutsEnabled) {
       icon = Icons.hourglass_top;
-      color = Colors.blue;
+      color = AppColors.info;
       title = 'En revisión';
       subtitle = status.message ?? 'Stripe está verificando tu información';
     } else {
       icon = Icons.check_circle;
-      color = Colors.green;
+      color = AppColors.success;
       title = 'Listo';
       subtitle = status.message ?? '¡Tu cuenta está lista para recibir pagos!';
     }
@@ -274,11 +261,11 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.navyShadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -313,7 +300,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
             subtitle,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: AppColors.textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -343,14 +330,6 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
         label: Text(
           status.hasAccount ? 'Completar configuración' : 'Configurar ahora (3 min)',
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFE86A33),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       );
     }
 
@@ -362,9 +341,9 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              border: Border.all(color: AppColors.infoBorder),
             ),
             child: Column(
               children: [
@@ -380,7 +359,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                     Expanded(
                       child: Container(
                         height: 2,
-                        color: Colors.blue,
+                        color: AppColors.info,
                       ),
                     ),
                     _buildTimelineStep(
@@ -392,7 +371,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                     Expanded(
                       child: Container(
                         height: 2,
-                        color: Colors.grey[300],
+                        color: AppColors.border,
                       ),
                     ),
                     _buildTimelineStep(
@@ -408,7 +387,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.05),
+                    color: AppColors.infoLight,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -416,12 +395,12 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.schedule, color: Colors.blue[700], size: 18),
+                          Icon(Icons.schedule, color: AppColors.info, size: 18),
                           const SizedBox(width: 8),
                           Text(
                             'Tiempo estimado: 1-2 días laborables',
                             style: TextStyle(
-                              color: Colors.blue[800],
+                              color: AppColors.info,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -432,7 +411,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                         Text(
                           'Última comprobación: ${_formatLastChecked()}',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: AppColors.textMuted,
                             fontSize: 12,
                           ),
                         ),
@@ -456,7 +435,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 : const Icon(Icons.refresh, size: 18),
             label: const Text('Comprobar estado'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue[700],
+              foregroundColor: AppColors.info,
             ),
           ),
         ],
@@ -467,18 +446,18 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
+        color: AppColors.successLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
+        border: Border.all(color: AppColors.successBorder),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: Colors.green),
+          Icon(Icons.check_circle, color: AppColors.success),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Puedes aceptar trabajos y recibir pagos.',
-              style: TextStyle(color: Colors.green[800]),
+              style: TextStyle(color: AppColors.success),
             ),
           ),
         ],
@@ -490,11 +469,11 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.navyShadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -541,22 +520,22 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.05),
+              color: AppColors.infoLight,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.withOpacity(0.2)),
+              border: Border.all(color: AppColors.infoBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                    Icon(Icons.info_outline, color: AppColors.info, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       '¿Por qué necesitan mis datos?',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[800],
+                        color: AppColors.info,
                       ),
                     ),
                   ],
@@ -568,7 +547,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   'Stripe es utilizado por millones de autónomos en España.',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textMuted,
                     height: 1.4,
                   ),
                 ),
@@ -577,7 +556,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   'Necesitarás:',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
+                    color: AppColors.textDark,
                     fontSize: 13,
                   ),
                 ),
@@ -588,7 +567,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   '• Tu número de cuenta (IBAN)',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textMuted,
                     height: 1.5,
                   ),
                 ),
@@ -598,7 +577,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Colors.green[700],
+                    color: AppColors.success,
                   ),
                 ),
               ],
@@ -620,13 +599,13 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF0E8),
+            color: AppColors.navyVeryLight,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             icon,
             size: 20,
-            color: const Color(0xFFE86A33),
+            color: AppColors.navyDark,
           ),
         ),
         const SizedBox(width: 12),
@@ -645,7 +624,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
               Text(
                 description,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                   fontSize: 13,
                 ),
               ),
@@ -663,10 +642,10 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
     required bool isActive,
   }) {
     final color = isComplete
-        ? Colors.blue
+        ? AppColors.info
         : isActive
-            ? Colors.blue
-            : Colors.grey[400];
+            ? AppColors.info
+            : AppColors.textMuted;
 
     return Column(
       children: [
@@ -675,11 +654,11 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
           height: 36,
           decoration: BoxDecoration(
             color: isComplete || isActive
-                ? Colors.blue.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+                ? AppColors.infoLight
+                : AppColors.navyVeryLight,
             shape: BoxShape.circle,
             border: Border.all(
-              color: color!,
+              color: color,
               width: isActive ? 2 : 1,
             ),
           ),

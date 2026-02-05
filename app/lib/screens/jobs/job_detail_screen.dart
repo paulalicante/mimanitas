@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/geocoding_service.dart';
 import '../auth/phone_verification_screen.dart';
@@ -76,7 +77,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar el trabajo: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -244,7 +245,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Teléfono verificado'),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.success,
             ),
           );
           // Now apply to the job
@@ -261,7 +262,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al verificar perfil: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -287,7 +288,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle_outline,
-                          size: 20, color: Color(0xFFE86A33)),
+                          size: 20, color: AppColors.orange),
                       const SizedBox(width: 8),
                       Text(field),
                     ],
@@ -296,7 +297,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             const SizedBox(height: 12),
             const Text(
               'Esto permite que los clientes se pongan en contacto contigo cuando acepten tu aplicación.',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -310,10 +311,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               Navigator.pop(context);
               _showProfileCompletionDialog(missingFields);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Completar perfil'),
           ),
         ],
@@ -433,7 +430,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         const SnackBar(
                           content:
                               Text('Perfil actualizado y teléfono verificado'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppColors.success,
                         ),
                       );
                       // Now apply to the job
@@ -444,7 +441,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Perfil actualizado'),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppColors.success,
                       ),
                     );
                     await _applyToJob();
@@ -455,16 +452,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('Guardar'),
           ),
         ],
@@ -500,7 +493,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('¡Aplicación enviada con éxito!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -513,7 +506,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al aplicar: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -524,28 +517,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFBF5),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
-        ),
+        appBar: AppBar(),
         body: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFE86A33),
-          ),
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
     if (_job == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFBF5),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
-        ),
+        appBar: AppBar(),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -557,9 +538,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               const SizedBox(height: 16),
               Text(
                 'Trabajo no encontrado',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -584,15 +565,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Detalles del trabajo',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Detalles del trabajo'),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -621,7 +595,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF0E8),
+                      color: AppColors.orangeLight,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -631,7 +605,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFE86A33),
+                        color: AppColors.orange,
                       ),
                     ),
                   ),
@@ -647,13 +621,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0E8),
+                    color: AppColors.navyVeryLight,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     '$skillIcon $skillName',
                     style: const TextStyle(
-                      color: Color(0xFFE86A33),
+                      color: AppColors.navyDark,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -666,13 +640,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: AppColors.navyShadow,
                       blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
@@ -690,7 +664,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     Text(
                       _job!['description'],
                       style: TextStyle(
-                        color: Colors.grey[700],
+                        color: AppColors.textMuted,
                         fontSize: 16,
                         height: 1.5,
                       ),
@@ -705,13 +679,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: AppColors.navyShadow,
                       blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
@@ -719,7 +693,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   children: [
                     const Icon(
                       Icons.location_on,
-                      color: Color(0xFFE86A33),
+                      color: AppColors.navyDark,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -732,7 +706,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey,
+                              color: AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -756,10 +730,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F7FF),
+                    color: AppColors.infoLight,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF2196F3).withOpacity(0.3),
+                      color: AppColors.infoBorder,
                     ),
                   ),
                   child: _isLoadingTravelTime
@@ -770,7 +744,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.info,
                               ),
                             ),
                             SizedBox(width: 12),
@@ -778,7 +752,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               'Calculando tiempo de viaje...',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF2196F3),
+                                color: AppColors.info,
                               ),
                             ),
                           ],
@@ -791,7 +765,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.grey,
+                                color: AppColors.textMuted,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -804,7 +778,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                         children: [
                                           Icon(
                                             _travelModeIcon(entry.key),
-                                            color: const Color(0xFF2196F3),
+                                            color: AppColors.info,
                                             size: 22,
                                           ),
                                           const SizedBox(width: 10),
@@ -813,7 +787,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1565C0),
+                                              color: AppColors.navyDark,
                                             ),
                                           ),
                                         ],
@@ -833,13 +807,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.navyShadow,
                         blurRadius: 10,
-                        offset: const Offset(0, 2),
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -848,7 +822,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     children: [
                       const Icon(
                         Icons.calendar_today,
-                        color: Color(0xFFE86A33),
+                        color: AppColors.navyDark,
                         size: 24,
                       ),
                       const SizedBox(width: 12),
@@ -863,7 +837,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.grey,
+                                color: AppColors.textMuted,
                               ),
                             ),
                             if (_job!['scheduled_date'] != null) ...[
@@ -887,9 +861,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 '~${_formatDuration(_job!['estimated_duration_minutes'])} estimado',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 14,
-                                  color: Colors.grey[600],
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                             ],
@@ -908,13 +882,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: AppColors.navyShadow,
                       blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
@@ -924,7 +898,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       width: 48,
                       height: 48,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFFF0E8),
+                        color: AppColors.navyVeryLight,
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -935,7 +909,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFE86A33),
+                            color: AppColors.navyDark,
                           ),
                         ),
                       ),
@@ -950,7 +924,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey,
+                              color: AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -979,8 +953,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         : _checkProfileAndApply,
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          _hasApplied ? Colors.grey : const Color(0xFFE86A33),
-                      foregroundColor: Colors.white,
+                          _hasApplied ? AppColors.textMuted : null,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1013,21 +986,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0E8),
+                    color: AppColors.orangeLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Row(
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: Color(0xFFE86A33),
+                        color: AppColors.orange,
                       ),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Este es tu trabajo publicado',
                           style: TextStyle(
-                            color: Color(0xFFE86A33),
+                            color: AppColors.orange,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

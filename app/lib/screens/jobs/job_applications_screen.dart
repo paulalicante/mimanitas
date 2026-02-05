@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/payment_service.dart';
 
@@ -57,7 +58,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar las aplicaciones: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -76,9 +77,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         context: context,
         barrierDismissible: false,
         builder: (context) => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFE86A33),
-          ),
+          child: CircularProgressIndicator(),
         ),
       );
 
@@ -109,7 +108,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(checkoutResult.error ?? 'Error al crear el pago'),
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
               ),
             );
           }
@@ -141,7 +140,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('No se pudo abrir la página de pago'),
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
               ),
             );
           }
@@ -158,7 +157,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al aceptar la aplicación: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -176,7 +175,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: Color(0xFFE86A33)),
+            CircularProgressIndicator(),
             SizedBox(height: 16),
             Text(
               'Verificando pago...',
@@ -185,7 +184,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             SizedBox(height: 8),
             Text(
               'Esto puede tardar unos segundos.',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -211,7 +210,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(verifyResult!.message ?? '¡Pago completado! Trabajo asignado.'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         await _loadApplications();
@@ -222,7 +221,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('No se pudo verificar el pago. Si has pagado, el estado se actualizará en breve.'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.orange,
             duration: Duration(seconds: 5),
           ),
         );
@@ -237,7 +236,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.account_balance_wallet_outlined, color: Colors.orange[700]),
+            Icon(Icons.account_balance_wallet_outlined, color: AppColors.orange),
             const SizedBox(width: 12),
             const Text('Cuenta no configurada'),
           ],
@@ -253,19 +252,19 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: AppColors.infoLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lightbulb_outline, color: Colors.blue, size: 20),
+                  const Icon(Icons.lightbulb_outline, color: AppColors.info, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Envíale un mensaje para avisarle que quieres contratarle. '
                       'La configuración solo tarda 3 minutos.',
                       style: TextStyle(
-                        color: Colors.blue[800],
+                        color: AppColors.info,
                         fontSize: 13,
                       ),
                     ),
@@ -287,13 +286,10 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Usa Mensajes para contactar con el helper'),
-                  backgroundColor: Colors.blue,
+                  backgroundColor: AppColors.info,
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-            ),
             icon: const Icon(Icons.message, size: 18),
             label: const Text('Enviar mensaje'),
           ),
@@ -324,18 +320,18 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: AppColors.infoLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                  const Icon(Icons.info_outline, color: AppColors.info, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Serás redirigido a Stripe para completar el pago de forma segura.',
                       style: TextStyle(
-                        color: Colors.blue[800],
+                        color: AppColors.info,
                         fontSize: 13,
                       ),
                     ),
@@ -347,18 +343,18 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: AppColors.successLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.lock, color: Colors.green, size: 20),
+                  const Icon(Icons.lock, color: AppColors.success, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'El dinero se guardará en depósito hasta que marques el trabajo como completado.',
                       style: TextStyle(
-                        color: Colors.green[800],
+                        color: AppColors.success,
                         fontSize: 13,
                       ),
                     ),
@@ -375,9 +371,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-            ),
             icon: const Icon(Icons.open_in_new, size: 18),
             label: Text('Pagar ${checkoutResult.formattedTotal}'),
           ),
@@ -402,7 +395,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
             amount,
             style: TextStyle(
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-              color: bold ? const Color(0xFFE86A33) : null,
+              color: bold ? AppColors.orange : null,
             ),
           ),
         ],
@@ -421,7 +414,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Aplicación rechazada'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.orange,
           ),
         );
       }
@@ -433,7 +426,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al rechazar la aplicación: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -464,9 +457,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               Navigator.of(context).pop();
               _acceptApplication(applicationId, helperId);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE86A33),
-            ),
             child: const Text('Continuar'),
           ),
         ],
@@ -491,7 +481,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               _rejectApplication(applicationId);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
             child: const Text('Rechazar'),
           ),
@@ -518,30 +508,23 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return AppColors.orange;
       case 'accepted':
-        return Colors.green;
+        return AppColors.success;
       case 'rejected':
-        return Colors.red;
+        return AppColors.error;
       case 'withdrawn':
-        return Colors.grey;
+        return AppColors.textMuted;
       default:
-        return Colors.grey;
+        return AppColors.textMuted;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Aplicaciones',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Aplicaciones'),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -564,7 +547,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                   '${_applications.length} ${_applications.length == 1 ? 'aplicación' : 'aplicaciones'}',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[600],
+                    color: AppColors.textMuted,
                   ),
                 ),
               ],
@@ -575,9 +558,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFE86A33),
-                    ),
+                    child: CircularProgressIndicator(),
                   )
                 : _applications.isEmpty
                     ? Center(
@@ -593,7 +574,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                               'No hay aplicaciones todavía',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.grey[600],
+                                color: AppColors.textMuted,
                               ),
                             ),
                           ],
@@ -601,7 +582,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                       )
                     : RefreshIndicator(
                         onRefresh: _loadApplications,
-                        color: const Color(0xFFE86A33),
+                        color: AppColors.orange,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _applications.length,
@@ -650,7 +631,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                           width: 48,
                                           height: 48,
                                           decoration: const BoxDecoration(
-                                            color: Color(0xFFFFF0E8),
+                                            color: AppColors.navyVeryLight,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Center(
@@ -661,7 +642,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                               style: const TextStyle(
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFFE86A33),
+                                                color: AppColors.navyDark,
                                               ),
                                             ),
                                           ),
@@ -689,14 +670,14 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                                         vertical: 2,
                                                       ),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.grey[200],
+                                                        color: AppColors.navyVeryLight,
                                                         borderRadius: BorderRadius.circular(10),
                                                       ),
                                                       child: Text(
                                                         '$helperAge años',
                                                         style: TextStyle(
                                                           fontSize: 12,
-                                                          color: Colors.grey[700],
+                                                          color: AppColors.textMuted,
                                                           fontWeight: FontWeight.w600,
                                                         ),
                                                       ),
@@ -710,14 +691,14 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                                     Icon(
                                                       Icons.location_on,
                                                       size: 14,
-                                                      color: Colors.grey[600],
+                                                      color: AppColors.textMuted,
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
                                                       helperBarrio,
                                                       style: TextStyle(
                                                         fontSize: 14,
-                                                        color: Colors.grey[600],
+                                                        color: AppColors.textMuted,
                                                       ),
                                                     ),
                                                   ],
@@ -728,14 +709,14 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                                     Icon(
                                                       Icons.phone,
                                                       size: 14,
-                                                      color: Colors.grey[600],
+                                                      color: AppColors.textMuted,
                                                     ),
                                                     const SizedBox(width: 4),
                                                     Text(
                                                       helperPhone,
                                                       style: TextStyle(
                                                         fontSize: 14,
-                                                        color: Colors.grey[600],
+                                                        color: AppColors.textMuted,
                                                       ),
                                                     ),
                                                   ],
@@ -772,7 +753,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFFFFBF5),
+                                          color: AppColors.background,
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Column(
@@ -783,7 +764,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.grey[700],
+                                                color: AppColors.textMuted,
                                               ),
                                             ),
                                             const SizedBox(height: 6),
@@ -791,7 +772,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                               helperBio,
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: Colors.grey[700],
+                                                color: AppColors.textMuted,
                                                 height: 1.4,
                                               ),
                                             ),
@@ -812,9 +793,9 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                                 helperName,
                                               ),
                                               style: OutlinedButton.styleFrom(
-                                                foregroundColor: Colors.red,
+                                                foregroundColor: AppColors.error,
                                                 side: const BorderSide(
-                                                  color: Colors.red,
+                                                  color: AppColors.error,
                                                   width: 1.5,
                                                 ),
                                                 shape: RoundedRectangleBorder(
@@ -833,8 +814,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                                 helperName,
                                               ),
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: const Color(0xFFE86A33),
-                                                foregroundColor: Colors.white,
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
@@ -852,21 +831,21 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFFFF0E8),
+                                          color: AppColors.orangeLight,
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Row(
                                           children: [
                                             const Icon(
                                               Icons.phone,
-                                              color: Color(0xFFE86A33),
+                                              color: AppColors.orange,
                                               size: 20,
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
                                               'Contacta con $helperName para coordinar',
                                               style: const TextStyle(
-                                                color: Color(0xFFE86A33),
+                                                color: AppColors.orange,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 14,
                                               ),

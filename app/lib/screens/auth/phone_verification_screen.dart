@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import 'dart:async';
 
@@ -159,15 +160,8 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Verificar teléfono',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Verificar teléfono'),
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -181,7 +175,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                 const Icon(
                   Icons.phone_android,
                   size: 80,
-                  color: Color(0xFFE86A33),
+                  color: AppColors.navyDark,
                 ),
                 const SizedBox(height: 24),
 
@@ -190,7 +184,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                   'Verificación por SMS',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE86A33),
+                        color: AppColors.navyDark,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -202,7 +196,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                       ? 'Hemos enviado un código de verificación a:'
                       : 'Enviaremos un código de verificación a:',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: AppColors.textMuted,
                     fontSize: 16,
                   ),
                   textAlign: TextAlign.center,
@@ -215,7 +209,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE86A33),
+                    color: AppColors.navyDark,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -227,18 +221,18 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.green[50],
+                      color: AppColors.successLight,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green[200]!),
+                      border: Border.all(color: AppColors.successBorder),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle, color: Colors.green[700]),
+                        Icon(Icons.check_circle, color: AppColors.success),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _successMessage!,
-                            style: TextStyle(color: Colors.green[700]),
+                            style: TextStyle(color: AppColors.success),
                           ),
                         ),
                       ],
@@ -251,21 +245,21 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
+                      color: AppColors.errorLight,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
+                      border: Border.all(color: AppColors.errorBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.error, color: Colors.red[700]),
+                            Icon(Icons.error, color: AppColors.error),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _errorMessage!,
-                                style: TextStyle(color: Colors.red[700]),
+                                style: TextStyle(color: AppColors.error),
                               ),
                             ),
                           ],
@@ -276,7 +270,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                             child: Text(
                               'Intentos restantes: $_attemptsRemaining',
                               style: TextStyle(
-                                color: Colors.red[700],
+                                color: AppColors.error,
                                 fontSize: 12,
                               ),
                             ),
@@ -290,12 +284,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _sendVerificationCode,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE86A33),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      minimumSize: const Size(double.infinity, 48),
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -342,12 +331,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                   ElevatedButton(
                     onPressed: _isLoading ? null : _verifyCode,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE86A33),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      minimumSize: const Size(double.infinity, 48),
                     ),
                     child: _isLoading
                         ? const SizedBox(
@@ -379,7 +363,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                           ? 'Reenviar código en $_resendCountdown segundos'
                           : 'Reenviar código',
                       style: const TextStyle(
-                        color: Color(0xFFE86A33),
+                        color: AppColors.orange,
                       ),
                     ),
                   ),
@@ -391,22 +375,22 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue[50],
+                    color: AppColors.infoLight,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue[200]!),
+                    border: Border.all(color: AppColors.infoBorder),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.info, color: Colors.blue[700], size: 20),
+                          Icon(Icons.info, color: AppColors.info, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             '¿Por qué verificar?',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue[700],
+                              color: AppColors.info,
                             ),
                           ),
                         ],
@@ -415,7 +399,7 @@ class _PhoneVerificationScreenState extends State<PhoneVerificationScreen> {
                       Text(
                         'La verificación por SMS garantiza que tenemos un número de contacto real y ayuda a mantener la confianza en la plataforma.',
                         style: TextStyle(
-                          color: Colors.grey[700],
+                          color: AppColors.textMuted,
                           fontSize: 14,
                         ),
                       ),

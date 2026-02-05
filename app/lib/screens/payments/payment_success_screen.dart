@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../services/payment_service.dart';
 
 /// Screen shown after returning from Stripe Checkout
@@ -45,15 +46,10 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: Text(
           _isLoading ? 'Verificando pago...' : (_success ? 'Pago completado' : 'Error'),
-          style: const TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
         automaticallyImplyLeading: !_isLoading,
       ),
       body: Center(
@@ -63,7 +59,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
               ? const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: Color(0xFFE86A33)),
+                    CircularProgressIndicator(),
                     SizedBox(height: 24),
                     Text(
                       'Verificando tu pago...',
@@ -86,22 +82,22 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: AppColors.successLight,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle,
-              color: Colors.green,
+              color: AppColors.success,
               size: 60,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             '¡Pago completado!',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.green,
+              color: AppColors.success,
             ),
           ),
           const SizedBox(height: 16),
@@ -109,7 +105,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
             _message ?? 'El trabajo ha sido asignado correctamente.',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: AppColors.textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -117,17 +113,17 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: AppColors.infoLight,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
-                const Icon(Icons.info_outline, color: Colors.blue),
+                Icon(Icons.info_outline, color: AppColors.info),
                 const SizedBox(height: 8),
                 Text(
                   'El dinero está guardado en depósito. Se liberará al helper cuando marques el trabajo como completado.',
                   style: TextStyle(
-                    color: Colors.blue[800],
+                    color: AppColors.info,
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -143,14 +139,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
                 // Go back to home/my jobs
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE86A33),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
               child: const Text(
                 'Volver al inicio',
                 style: TextStyle(fontSize: 16),
@@ -167,22 +155,22 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: AppColors.errorLight,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.error_outline,
-              color: Colors.red,
+              color: AppColors.error,
               size: 60,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Error en el pago',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.red,
+              color: AppColors.error,
             ),
           ),
           const SizedBox(height: 16),
@@ -190,7 +178,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
             _error ?? 'No se pudo verificar el pago.',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: AppColors.textMuted,
             ),
             textAlign: TextAlign.center,
           ),
@@ -201,14 +189,6 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE86A33),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
               child: const Text(
                 'Volver a intentar',
                 style: TextStyle(fontSize: 16),

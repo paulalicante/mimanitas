@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/payment_service.dart';
 import 'payment_setup_screen.dart';
@@ -66,15 +67,8 @@ class _EarningsScreenState extends State<EarningsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Mis ganancias',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Mis ganancias'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -91,13 +85,10 @@ class _EarningsScreenState extends State<EarningsScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE86A33),
-              ),
+              child: CircularProgressIndicator(),
             )
           : RefreshIndicator(
               onRefresh: _loadData,
-              color: const Color(0xFFE86A33),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(24),
@@ -130,29 +121,29 @@ class _EarningsScreenState extends State<EarningsScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: AppColors.orangeLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: AppColors.orange.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber, color: Colors.orange),
+          Icon(Icons.warning_amber, color: AppColors.orange),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Configura tu cuenta de pagos',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange,
+                    color: AppColors.orange,
                   ),
                 ),
                 Text(
                   _stripeStatus?.message ?? 'Necesitas configurar Stripe para recibir pagos',
                   style: TextStyle(
-                    color: Colors.orange[800],
+                    color: AppColors.orange,
                     fontSize: 13,
                   ),
                 ),
@@ -185,7 +176,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
             title: 'Disponible',
             amount: balance?.formattedAvailable ?? '€0.00',
             icon: Icons.account_balance_wallet,
-            color: Colors.green,
+            color: AppColors.success,
             subtitle: 'Listo para retirar',
           ),
         ),
@@ -195,7 +186,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
             title: 'Pendiente',
             amount: balance?.formattedPending ?? '€0.00',
             icon: Icons.hourglass_top,
-            color: Colors.orange,
+            color: AppColors.orange,
             subtitle: 'En espera',
           ),
         ),
@@ -213,11 +204,11 @@ class _EarningsScreenState extends State<EarningsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.navyShadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -233,7 +224,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                   fontSize: 14,
                 ),
               ),
@@ -252,7 +243,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
           Text(
             subtitle,
             style: TextStyle(
-              color: Colors.grey[500],
+              color: AppColors.textMuted,
               fontSize: 12,
             ),
           ),
@@ -270,13 +261,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isOver
-            ? Colors.red.withOpacity(0.1)
-            : Colors.blue.withOpacity(0.1),
+            ? AppColors.errorLight
+            : AppColors.infoLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isOver
-              ? Colors.red.withOpacity(0.3)
-              : Colors.blue.withOpacity(0.3),
+              ? AppColors.errorBorder
+              : AppColors.infoBorder,
         ),
       ),
       child: Row(
@@ -284,7 +275,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         children: [
           Icon(
             Icons.info_outline,
-            color: isOver ? Colors.red : Colors.blue,
+            color: isOver ? AppColors.error : AppColors.info,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -297,7 +288,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       : 'Acercándote al umbral fiscal',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isOver ? Colors.red : Colors.blue,
+                    color: isOver ? AppColors.error : AppColors.info,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -308,7 +299,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                       : 'Llevas ${balance.formattedYtd} este año (${balance.ytdTransactionCount} transacciones). '
                           'El límite para declarar es €2.000 o 30 transacciones.',
                   style: TextStyle(
-                    color: isOver ? Colors.red[800] : Colors.blue[800],
+                    color: isOver ? AppColors.error : AppColors.info,
                     fontSize: 13,
                   ),
                 ),
@@ -338,7 +329,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
               Text(
                 'Total: ${_balance!.formattedTotal}',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                   fontSize: 14,
                 ),
               ),
@@ -350,7 +341,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
           Container(
             padding: const EdgeInsets.all(48),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -358,13 +349,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 Icon(
                   Icons.receipt_long_outlined,
                   size: 64,
-                  color: Colors.grey[300],
+                  color: AppColors.border,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Sin transacciones todavía',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: AppColors.textMuted,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -373,7 +364,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                 Text(
                   'Cuando completes trabajos, verás tus ganancias aquí',
                   style: TextStyle(
-                    color: Colors.grey[500],
+                    color: AppColors.textMuted,
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -384,11 +375,11 @@ class _EarningsScreenState extends State<EarningsScreen> {
         else
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: AppColors.navyShadow,
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -423,22 +414,22 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
     switch (status) {
       case 'held':
-        statusColor = Colors.orange;
+        statusColor = AppColors.orange;
         statusText = 'En espera';
         statusIcon = Icons.hourglass_top;
         break;
       case 'released':
-        statusColor = Colors.green;
+        statusColor = AppColors.success;
         statusText = 'Completado';
         statusIcon = Icons.check_circle;
         break;
       case 'disputed':
-        statusColor = Colors.red;
+        statusColor = AppColors.error;
         statusText = 'Disputado';
         statusIcon = Icons.warning;
         break;
       default:
-        statusColor = Colors.grey;
+        statusColor = AppColors.textMuted;
         statusText = 'Pendiente';
         statusIcon = Icons.pending;
     }
@@ -465,7 +456,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
             Text(
               _formatDate(createdAt),
               style: TextStyle(
-                color: Colors.grey[500],
+                color: AppColors.textMuted,
                 fontSize: 12,
               ),
             ),

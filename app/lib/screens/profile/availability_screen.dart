@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../main.dart';
+import '../../app_theme.dart';
 
 const _dayNames = [
   'Lunes',
@@ -105,7 +106,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme:
-              const ColorScheme.light(primary: Color(0xFFE86A33)),
+              const ColorScheme.light(primary: AppColors.navyDark),
         ),
         child: child!,
       ),
@@ -119,7 +120,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme:
-              const ColorScheme.light(primary: Color(0xFFE86A33)),
+              const ColorScheme.light(primary: AppColors.navyDark),
         ),
         child: child!,
       ),
@@ -183,7 +184,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Disponibilidad guardada'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop();
@@ -194,7 +195,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al guardar: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -209,15 +210,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Mi disponibilidad',
-          style: TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
@@ -230,7 +226,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 : const Text(
                     'Guardar',
                     style: TextStyle(
-                      color: Color(0xFFE86A33),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -239,20 +234,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFFE86A33)))
+              child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Configura tu horario semanal',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  const Text(
                     'Solo te notificaremos de trabajos que coincidan con tu disponibilidad.',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                   ),
                   const SizedBox(height: 16),
                   ...List.generate(7, (displayDay) {
@@ -260,13 +255,13 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
+                        boxShadow: const [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: AppColors.navyShadow,
                             blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
@@ -296,13 +291,13 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                     CrossAxisAlignment.start,
                                 children: [
                                   if (slots.isEmpty)
-                                    Padding(
+                                    const Padding(
                                       padding:
-                                          const EdgeInsets.only(top: 8),
+                                          EdgeInsets.only(top: 8),
                                       child: Text(
                                         'Sin horario',
                                         style: TextStyle(
-                                          color: Colors.grey[400],
+                                          color: AppColors.textMuted,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -325,7 +320,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                         onDeleted: () =>
                                             _removeSlot(displayDay, idx),
                                         backgroundColor:
-                                            const Color(0xFFFFF0E8),
+                                            AppColors.navyVeryLight,
                                       ),
                                     );
                                   }),
@@ -335,7 +330,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             // Add button
                             IconButton(
                               icon: const Icon(Icons.add_circle_outline,
-                                  color: Color(0xFFE86A33)),
+                                  color: AppColors.navyDark),
                               onPressed: () => _addSlot(displayDay),
                               tooltip: 'Anadir horario',
                             ),
@@ -349,15 +344,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE86A33),
-                        foregroundColor: Colors.white,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                       child: _isSaving
                           ? const SizedBox(
                               width: 20,

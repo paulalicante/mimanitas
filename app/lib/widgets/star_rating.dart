@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app_theme.dart';
 
 class StarRating extends StatelessWidget {
   final double rating;
@@ -12,7 +13,7 @@ class StarRating extends StatelessWidget {
     required this.rating,
     this.onRatingChanged,
     this.size = 32,
-    this.color = const Color(0xFFE86A33),
+    this.color = AppColors.gold,
     this.allowHalfRatings = true,
   });
 

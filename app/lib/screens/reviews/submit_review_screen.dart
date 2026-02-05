@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../../widgets/star_rating.dart';
 
@@ -64,7 +65,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('¡Reseña enviada exitosamente!'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
         Navigator.of(context).pop(true); // Return true to indicate success
@@ -80,15 +81,8 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Dejar reseña',
-          style: TextStyle(color: Color(0xFFE86A33)),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+        title: const Text('Dejar reseña'),
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -99,10 +93,10 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Icon
-                const Icon(
+                Icon(
                   Icons.rate_review,
                   size: 80,
-                  color: Color(0xFFE86A33),
+                  color: AppColors.navyDark,
                 ),
                 const SizedBox(height: 24),
 
@@ -111,7 +105,7 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   '¿Cómo fue tu experiencia con ${widget.revieweeName}?',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE86A33),
+                        color: AppColors.navyDark,
                       ),
                   textAlign: TextAlign.center,
                 ),
@@ -121,11 +115,11 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.navyShadow,
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -133,12 +127,12 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   ),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'Calificación',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFE86A33),
+                          color: AppColors.navyDark,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -157,8 +151,8 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                         _rating > 0
                             ? '${_rating.toStringAsFixed(1)} estrellas'
                             : 'Toca para calificar',
-                        style: TextStyle(
-                          color: Colors.grey[600],
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
                           fontSize: 14,
                         ),
                       ),
@@ -171,11 +165,11 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.navyShadow,
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -184,12 +178,12 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Comentario (opcional)',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFE86A33),
+                          color: AppColors.navyDark,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -201,8 +195,6 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          filled: true,
-                          fillColor: const Color(0xFFFFFBF5),
                         ),
                         maxLines: 5,
                         maxLength: 500,
@@ -218,18 +210,18 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
+                      color: AppColors.errorLight,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
+                      border: Border.all(color: AppColors.errorBorder),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error, color: Colors.red[700]),
+                        const Icon(Icons.error, color: AppColors.error),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: TextStyle(color: Colors.red[700]),
+                            style: const TextStyle(color: AppColors.error),
                           ),
                         ),
                       ],
@@ -239,14 +231,6 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                 // Submit button
                 ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitReview,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE86A33),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                   child: _isSubmitting
                       ? const SizedBox(
                           height: 20,
@@ -270,8 +254,8 @@ class _SubmitReviewScreenState extends State<SubmitReviewScreen> {
                 // Info text
                 Text(
                   'Tu reseña será visible públicamente en el perfil de ${widget.revieweeName}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
                     fontSize: 12,
                   ),
                   textAlign: TextAlign.center,

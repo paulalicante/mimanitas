@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import '../app_theme.dart';
 import '../main.dart';
 import 'star_rating.dart';
 
@@ -84,9 +85,7 @@ class _ReviewsListState extends State<ReviewsList> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFFE86A33),
-        ),
+        child: CircularProgressIndicator(),
       );
     }
 
@@ -95,11 +94,11 @@ class _ReviewsListState extends State<ReviewsList> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error al cargar reseñas',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -119,13 +118,13 @@ class _ReviewsListState extends State<ReviewsList> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: AppColors.navyShadow,
                   blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
@@ -133,10 +132,10 @@ class _ReviewsListState extends State<ReviewsList> {
               children: [
                 Text(
                   _averageRating!.toStringAsFixed(1),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE86A33),
+                    color: AppColors.navyDark,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -147,8 +146,8 @@ class _ReviewsListState extends State<ReviewsList> {
                 const SizedBox(height: 8),
                 Text(
                   '$_reviewCount ${_reviewCount == 1 ? 'reseña' : 'reseñas'}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
                     fontSize: 16,
                   ),
                 ),
@@ -162,30 +161,30 @@ class _ReviewsListState extends State<ReviewsList> {
             margin: const EdgeInsets.only(top: 24),
             padding: const EdgeInsets.all(48),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
+            child: const Column(
               children: [
                 Icon(
                   Icons.rate_review_outlined,
                   size: 64,
-                  color: Colors.grey[300],
+                  color: AppColors.border,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   'Sin reseñas todavía',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: AppColors.textMuted,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Las reseñas aparecerán aquí después de completar trabajos',
                   style: TextStyle(
-                    color: Colors.grey[500],
+                    color: AppColors.textMuted,
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -211,11 +210,11 @@ class _ReviewsListState extends State<ReviewsList> {
               margin: EdgeInsets.only(bottom: index < _reviews.length - 1 ? 16 : 0),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: AppColors.navyShadow,
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -227,7 +226,7 @@ class _ReviewsListState extends State<ReviewsList> {
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: const Color(0xFFE86A33),
+                        backgroundColor: AppColors.navyDark,
                         child: Text(
                           reviewerName[0].toUpperCase(),
                           style: const TextStyle(
@@ -250,8 +249,8 @@ class _ReviewsListState extends State<ReviewsList> {
                             ),
                             Text(
                               formattedDate,
-                              style: TextStyle(
-                                color: Colors.grey[600],
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
                                 fontSize: 12,
                               ),
                             ),
@@ -268,8 +267,8 @@ class _ReviewsListState extends State<ReviewsList> {
                     const SizedBox(height: 12),
                     Text(
                       comment,
-                      style: TextStyle(
-                        color: Colors.grey[700],
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
                         fontSize: 14,
                         height: 1.5,
                       ),

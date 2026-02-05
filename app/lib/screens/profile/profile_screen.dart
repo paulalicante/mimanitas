@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../widgets/reviews_list.dart';
+import '../../app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, shows current user's profile
@@ -59,27 +60,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFBF5),
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+          title: const Text(''),
         ),
         body: const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFE86A33),
-          ),
+          child: CircularProgressIndicator(),
         ),
       );
     }
 
     if (_profile == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFBF5),
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
+          title: const Text(''),
         ),
         body: Center(
           child: Column(
@@ -94,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'Perfil no encontrado',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -114,15 +107,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final reviewCount = _profile!['review_count'] as int? ?? 0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: Text(
           _isOwnProfile ? 'Mi perfil' : 'Perfil',
-          style: const TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
         actions: [
           if (_isOwnProfile)
             IconButton(
@@ -148,13 +136,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: AppColors.navyShadow,
                       blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ],
                 ),
@@ -165,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       width: 100,
                       height: 100,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFFF0E8),
+                        color: AppColors.navyVeryLight,
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -174,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: const TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFFE86A33),
+                            color: AppColors.navyDark,
                           ),
                         ),
                       ),
@@ -194,10 +182,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         if (phoneVerified) ...[
                           const SizedBox(width: 8),
-                          Icon(
+                          const Icon(
                             Icons.verified,
                             size: 24,
-                            color: Colors.blue[700],
+                            color: AppColors.info,
                           ),
                         ],
                       ],
@@ -209,16 +197,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.location_on,
                             size: 18,
-                            color: Colors.grey[600],
+                            color: AppColors.textMuted,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             barrio,
-                            style: TextStyle(
-                              color: Colors.grey[600],
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
                               fontSize: 16,
                             ),
                           ),
@@ -234,7 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF0E8),
+                          color: AppColors.navyVeryLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -242,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             const Icon(
                               Icons.star,
-                              color: Color(0xFFE86A33),
+                              color: AppColors.gold,
                               size: 24,
                             ),
                             const SizedBox(width: 8),
@@ -251,14 +239,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFE86A33),
+                                color: AppColors.navyDark,
                               ),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '($reviewCount ${reviewCount == 1 ? 'reseña' : 'reseñas'})',
-                              style: TextStyle(
-                                color: Colors.grey[600],
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
                                 fontSize: 14,
                               ),
                             ),
@@ -276,13 +264,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.navyShadow,
                         blurRadius: 10,
-                        offset: const Offset(0, 2),
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -299,8 +287,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 12),
                       Text(
                         bio,
-                        style: TextStyle(
-                          color: Colors.grey[700],
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
                           fontSize: 16,
                           height: 1.5,
                         ),
@@ -315,13 +303,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.navyShadow,
                         blurRadius: 10,
-                        offset: const Offset(0, 2),
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -341,13 +329,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const Icon(
                             Icons.phone,
                             size: 20,
-                            color: Color(0xFFE86A33),
+                            color: AppColors.navyDark,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             phone,
-                            style: TextStyle(
-                              color: Colors.grey[700],
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
                               fontSize: 16,
                             ),
                           ),
@@ -378,30 +366,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(48),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.rate_review_outlined,
                         size: 64,
-                        color: Colors.grey[300],
+                        color: AppColors.border,
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      const Text(
                         'Sin reseñas todavía',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: AppColors.textMuted,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         'Las reseñas aparecerán aquí después de completar trabajos',
                         style: TextStyle(
-                          color: Colors.grey[500],
+                          color: AppColors.textMuted,
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,

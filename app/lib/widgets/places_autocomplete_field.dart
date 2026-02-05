@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/geocoding_service.dart';
+import '../app_theme.dart';
 
 /// Result returned when a place is selected
 class PlaceSelection {
@@ -167,9 +168,9 @@ class _PlacesAutocompleteFieldState extends State<PlacesAutocompleteField> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 250),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: AppColors.border),
               ),
               child: ListView.builder(
                 shrinkWrap: true,
@@ -184,8 +185,8 @@ class _PlacesAutocompleteFieldState extends State<PlacesAutocompleteField> {
                           horizontal: 16, vertical: 12),
                       child: Row(
                         children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 20, color: Colors.grey[600]),
+                          const Icon(Icons.location_on_outlined,
+                              size: 20, color: AppColors.textMuted),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -201,8 +202,8 @@ class _PlacesAutocompleteFieldState extends State<PlacesAutocompleteField> {
                                 if (suggestion.secondaryText.isNotEmpty)
                                   Text(
                                     suggestion.secondaryText,
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -248,7 +249,6 @@ class _PlacesAutocompleteFieldState extends State<PlacesAutocompleteField> {
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFFE86A33),
                     ),
                   ),
                 )

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import 'job_detail_screen.dart';
 
@@ -242,15 +243,10 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
     final hiddenCount = _hiddenJobsCount;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         title: const Text(
           'Trabajos disponibles',
-          style: TextStyle(color: Color(0xFFE86A33)),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFE86A33)),
         actions: [
           // Schedule filter toggle (only if helper has availability set)
           if (_hasAvailability)
@@ -260,8 +256,8 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                     ? Icons.calendar_month
                     : Icons.calendar_month_outlined,
                 color: _filterBySchedule
-                    ? const Color(0xFFE86A33)
-                    : Colors.grey,
+                    ? AppColors.gold
+                    : Colors.white70,
               ),
               tooltip: _filterBySchedule
                   ? 'Mostrando solo mi horario'
@@ -278,7 +274,6 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
               _selectedSkillFilter != null
                   ? Icons.filter_alt
                   : Icons.filter_alt_outlined,
-              color: const Color(0xFFE86A33),
             ),
             tooltip: 'Filtrar por tipo de trabajo',
             onSelected: (skillId) {
@@ -314,9 +309,7 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE86A33),
-              ),
+              child: CircularProgressIndicator(),
             )
           : _jobs.isEmpty
               ? Center(
@@ -332,9 +325,9 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                         _selectedSkillFilter != null
                             ? 'No hay trabajos de este tipo'
                             : 'No hay trabajos disponibles',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
-                          color: Colors.grey[600],
+                          color: AppColors.textMuted,
                         ),
                       ),
                       if (_selectedSkillFilter != null) ...[
@@ -349,7 +342,6 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _loadJobs,
-                  color: const Color(0xFFE86A33),
                   child: Column(
                     children: [
                       // Hidden jobs notice
@@ -358,18 +350,18 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
-                          color: const Color(0xFFFFF0E8),
+                          color: AppColors.orangeLight,
                           child: Row(
                             children: [
-                              Icon(Icons.info_outline,
-                                  size: 18, color: Colors.orange[800]),
+                              const Icon(Icons.info_outline,
+                                  size: 18, color: AppColors.orange),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   '$hiddenCount trabajo${hiddenCount == 1 ? '' : 's'} no coincide${hiddenCount == 1 ? '' : 'n'} con tu horario',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 13,
-                                    color: Colors.orange[900],
+                                    color: AppColors.orange,
                                   ),
                                 ),
                               ),
@@ -379,12 +371,12 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                     _filterBySchedule = false;
                                   });
                                 },
-                                child: Text(
+                                child: const Text(
                                   'Ver todos',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.orange[900],
+                                    color: AppColors.orange,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),
@@ -398,18 +390,18 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
-                          color: Colors.green.withOpacity(0.1),
-                          child: Row(
+                          color: AppColors.successLight,
+                          child: const Row(
                             children: [
-                              const Icon(Icons.check_circle_outline,
-                                  size: 18, color: Colors.green),
-                              const SizedBox(width: 8),
-                              const Expanded(
+                              Icon(Icons.check_circle_outline,
+                                  size: 18, color: AppColors.success),
+                              SizedBox(width: 8),
+                              Expanded(
                                 child: Text(
                                   'Todos los trabajos coinciden con tu horario',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.green,
+                                    color: AppColors.success,
                                   ),
                                 ),
                               ),
@@ -423,14 +415,14 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.calendar_month,
-                                        size: 64, color: Colors.grey[400]),
+                                    const Icon(Icons.calendar_month,
+                                        size: 64, color: AppColors.border),
                                     const SizedBox(height: 16),
-                                    Text(
+                                    const Text(
                                       'Ningun trabajo coincide con tu horario',
                                       style: TextStyle(
                                         fontSize: 18,
-                                        color: Colors.grey[600],
+                                        color: AppColors.textMuted,
                                       ),
                                     ),
                                     const SizedBox(height: 16),
@@ -508,7 +500,7 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                   style: const TextStyle(
                                                     fontSize: 18,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Color(0xFFE86A33),
+                                                    color: AppColors.orange,
                                                   ),
                                                 ),
                                               ],
@@ -524,8 +516,7 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                       vertical: 6,
                                                     ),
                                                     decoration: BoxDecoration(
-                                                      color: const Color(
-                                                          0xFFFFF0E8),
+                                                      color: AppColors.navyVeryLight,
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               12),
@@ -534,7 +525,7 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                       '$skillIcon $skillName',
                                                       style: const TextStyle(
                                                         color:
-                                                            Color(0xFFE86A33),
+                                                            AppColors.navyDark,
                                                         fontSize: 13,
                                                         fontWeight:
                                                             FontWeight.w600,
@@ -552,16 +543,11 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                     decoration: BoxDecoration(
                                                       color: applicationStatus ==
                                                               'accepted'
-                                                          ? Colors.green
-                                                              .withOpacity(0.15)
+                                                          ? AppColors.successLight
                                                           : applicationStatus ==
                                                                   'rejected'
-                                                              ? Colors.red
-                                                                  .withOpacity(
-                                                                      0.15)
-                                                              : Colors.blue
-                                                                  .withOpacity(
-                                                                      0.15),
+                                                              ? AppColors.errorLight
+                                                              : AppColors.infoLight,
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               12),
@@ -583,11 +569,11 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                           size: 14,
                                                           color: applicationStatus ==
                                                                   'accepted'
-                                                              ? Colors.green
+                                                              ? AppColors.success
                                                               : applicationStatus ==
                                                                       'rejected'
-                                                                  ? Colors.red
-                                                                  : Colors.blue,
+                                                                  ? AppColors.error
+                                                                  : AppColors.info,
                                                         ),
                                                         const SizedBox(
                                                             width: 4),
@@ -602,12 +588,11 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                           style: TextStyle(
                                                             color: applicationStatus ==
                                                                     'accepted'
-                                                                ? Colors.green
+                                                                ? AppColors.success
                                                                 : applicationStatus ==
                                                                         'rejected'
-                                                                    ? Colors.red
-                                                                    : Colors
-                                                                        .blue,
+                                                                    ? AppColors.error
+                                                                    : AppColors.info,
                                                             fontSize: 13,
                                                             fontWeight:
                                                                 FontWeight.w600,
@@ -622,8 +607,8 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                             const SizedBox(height: 12),
                                             Text(
                                               job['description'],
-                                              style: TextStyle(
-                                                color: Colors.grey[700],
+                                              style: const TextStyle(
+                                                color: AppColors.textMuted,
                                                 fontSize: 15,
                                                 height: 1.4,
                                               ),
@@ -638,16 +623,16 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                               const SizedBox(height: 8),
                                               Row(
                                                 children: [
-                                                  Icon(
+                                                  const Icon(
                                                     Icons.calendar_today,
                                                     size: 14,
-                                                    color: Colors.grey[600],
+                                                    color: AppColors.textMuted,
                                                   ),
                                                   const SizedBox(width: 4),
                                                   Text(
                                                     _formatScheduleCompact(job),
-                                                    style: TextStyle(
-                                                      color: Colors.grey[600],
+                                                    style: const TextStyle(
+                                                      color: AppColors.textMuted,
                                                       fontSize: 13,
                                                     ),
                                                   ),
@@ -657,26 +642,26 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                             const SizedBox(height: 8),
                                             Row(
                                               children: [
-                                                Icon(
+                                                const Icon(
                                                   Icons.location_on,
                                                   size: 16,
-                                                  color: Colors.grey[600],
+                                                  color: AppColors.textMuted,
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Expanded(
                                                   child: Text(
                                                     job['location_address'] ??
                                                         'Sin ubicacion',
-                                                    style: TextStyle(
-                                                      color: Colors.grey[600],
+                                                    style: const TextStyle(
+                                                      color: AppColors.textMuted,
                                                       fontSize: 14,
                                                     ),
                                                   ),
                                                 ),
                                                 Text(
                                                   posterName,
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
+                                                  style: const TextStyle(
+                                                    color: AppColors.textMuted,
                                                     fontSize: 14,
                                                   ),
                                                 ),
@@ -702,24 +687,33 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                     _loadJobs();
                                                   }
                                                 },
-                                                style:
-                                                    ElevatedButton.styleFrom(
-                                                  backgroundColor: hasApplied
-                                                      ? Colors.grey[600]
-                                                      : const Color(
-                                                          0xFFE86A33),
-                                                  foregroundColor:
-                                                      Colors.white,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      vertical: 12),
-                                                  shape:
-                                                      RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                  ),
-                                                ),
+                                                style: hasApplied
+                                                    ? ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            AppColors.textMuted,
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            vertical: 12),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      )
+                                                    : ElevatedButton.styleFrom(
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            vertical: 12),
+                                                        shape:
+                                                            RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                      ),
                                                 child: Text(
                                                   hasApplied
                                                       ? 'Ver detalles'

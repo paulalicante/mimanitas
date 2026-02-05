@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/message_notification_service.dart';
 
@@ -162,7 +163,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al enviar mensaje: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -178,21 +179,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final user = supabase.auth.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBF5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFE86A33)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               widget.otherUserName,
               style: const TextStyle(
-                color: Color(0xFFE86A33),
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -200,8 +193,8 @@ class _ChatScreenState extends State<ChatScreen> {
             if (widget.jobTitle != null)
               Text(
                 widget.jobTitle!,
-                style: TextStyle(
-                  color: Colors.grey[600],
+                style: const TextStyle(
+                  color: AppColors.darkTextSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -214,33 +207,31 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFFE86A33),
-                    ),
+                    child: CircularProgressIndicator(),
                   )
                 : _messages.isEmpty
-                    ? Center(
+                    ? const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.chat_bubble_outline,
                               size: 64,
-                              color: Colors.grey[300],
+                              color: AppColors.border,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             Text(
                               'No hay mensajes todavía',
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: AppColors.textMuted,
                                 fontSize: 16,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Text(
                               'Envía un mensaje para empezar',
                               style: TextStyle(
-                                color: Colors.grey[500],
+                                color: AppColors.textMuted,
                                 fontSize: 14,
                               ),
                             ),
@@ -273,14 +264,14 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: isOwnMessage
-                                    ? const Color(0xFFE86A33)
-                                    : Colors.white,
+                                    ? AppColors.navyDark
+                                    : AppColors.surface,
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
+                                boxShadow: const [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: AppColors.navyShadow,
                                     blurRadius: 5,
-                                    offset: const Offset(0, 2),
+                                    offset: Offset(0, 2),
                                   ),
                                 ],
                               ),
@@ -291,8 +282,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                     content,
                                     style: TextStyle(
                                       color: isOwnMessage
-                                          ? Colors.white
-                                          : Colors.black87,
+                                          ? AppColors.darkTextPrimary
+                                          : AppColors.textDark,
                                       fontSize: 15,
                                     ),
                                   ),
@@ -301,8 +292,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                     timeString,
                                     style: TextStyle(
                                       color: isOwnMessage
-                                          ? Colors.white.withOpacity(0.8)
-                                          : Colors.grey[600],
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.textMuted,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -317,13 +308,13 @@ class _ChatScreenState extends State<ChatScreen> {
           // Message input
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: AppColors.navyShadow,
                   blurRadius: 5,
-                  offset: const Offset(0, -2),
+                  offset: Offset(0, -2),
                 ),
               ],
             ),
@@ -337,15 +328,15 @@ class _ChatScreenState extends State<ChatScreen> {
                         hintText: 'Escribe un mensaje...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: const BorderSide(color: AppColors.border),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: const BorderSide(color: AppColors.border),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
-                          borderSide: const BorderSide(color: Color(0xFFE86A33)),
+                          borderSide: const BorderSide(color: AppColors.orange),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
@@ -360,7 +351,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(width: 12),
                   Container(
                     decoration: const BoxDecoration(
-                      color: Color(0xFFE86A33),
+                      color: AppColors.orange,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(

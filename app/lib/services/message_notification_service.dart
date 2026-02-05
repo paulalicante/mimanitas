@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../app_theme.dart';
 import '../main.dart';
 import '../screens/messages/chat_screen.dart';
 
@@ -278,7 +279,7 @@ class MessageNotificationService {
               width: 40,
               height: 40,
               decoration: const BoxDecoration(
-                color: Color(0xFFE86A33),
+                color: AppColors.orange,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -370,7 +371,7 @@ class MessageNotificationService {
         duration: const Duration(days: 365),
         action: SnackBarAction(
           label: 'Ver',
-          textColor: const Color(0xFFE86A33),
+          textColor: AppColors.orange,
           onPressed: () async {
             // Get other user's name for the chat screen
             final user = supabase.auth.currentUser;
