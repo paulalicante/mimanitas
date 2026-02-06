@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
@@ -674,227 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_userType == 'helper') ...[
               _buildHelperDashboard(),
             ] else ...[
-              // Hero Section
-              Container(
-                constraints: const BoxConstraints(maxWidth: 900),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
-                child: Column(
-                  children: [
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.goldLight,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        '🚀 Próximamente en Alicante',
-                        style: TextStyle(
-                          color: AppColors.warning,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Encuentra ayuda local.',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        height: 1.1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Comparte tu ',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                        ),
-                        Text(
-                          'tiempo',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            fontStyle: FontStyle.italic,
-                            color: AppColors.orange,
-                            height: 1.1,
-                          ),
-                        ),
-                        Text(
-                          '.',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Conecta con vecinos que necesitan una mano — o ofrece tus habilidades cuando tengas tiempo libre. Sin agencias, sin intermediarios.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: AppColors.textMuted,
-                        height: 1.6,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-
-              // How it works
-              Container(
-                constraints: const BoxConstraints(maxWidth: 900),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Cómo funciona',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    Wrap(
-                      spacing: 24,
-                      runSpacing: 24,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _buildStep(
-                          '1',
-                          'Publica lo que necesitas',
-                          '"Necesito ayuda para pintar mi valla este sábado" — pon tu precio o tarifa por hora.',
-                        ),
-                        _buildStep(
-                          '2',
-                          'O comparte tu tiempo',
-                          'Muestra cuándo estás disponible. Deja que te encuentren cuando necesiten ayuda.',
-                        ),
-                        _buildStep(
-                          '3',
-                          'Conecta y listo',
-                          'Mensajea, acuerda las condiciones, completa el trabajo. El pago se guarda seguro hasta que ambos estéis contentos.',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // CTA Section - Seeker UI
-              Container(
-                constraints: const BoxConstraints(maxWidth: 900),
-                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-                padding: const EdgeInsets.all(48),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.navyShadow,
-                      blurRadius: 24,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      '¿Necesitas ayuda?',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Publica un trabajo y encuentra manitas en tu barrio',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const PostJobScreen(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
-                        ),
-                        child: const Text(
-                          'Publicar un trabajo',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Features
-              Container(
-                constraints: const BoxConstraints(maxWidth: 900),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Column(
-                  children: [
-                    const Text(
-                      '¿Qué hace diferente a Mi Manitas?',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _buildFeature(
-                          '📅',
-                          'Horarios flexibles',
-                          'Muestra tu disponibilidad real. Perfecto para trabajadores por turnos y estudiantes.',
-                        ),
-                        _buildFeature(
-                          '🔒',
-                          'Pago seguro',
-                          'El dinero se guarda en depósito hasta que el trabajo esté bien hecho.',
-                        ),
-                        _buildFeature(
-                          '📍',
-                          'Hiperlocal',
-                          'Hecho para tu barrio, no un marketplace global sin alma.',
-                        ),
-                        _buildFeature(
-                          '🚗',
-                          'Opción de recogida',
-                          'Los manitas pueden ofrecerte recogerte si estás a las afueras.',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              _buildSeekerHomePage(),
             ],
 
             // Footer
@@ -979,6 +760,613 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         child: const Icon(Icons.bug_report),
+      ),
+    );
+  }
+
+  // --- Seeker Home Page (Marketing) ---
+
+  Widget _buildSeekerHomePage() {
+    return Column(
+      children: [
+        // Navy Hero Section
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.navyDark, AppColors.navyDarker],
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Column(
+                children: [
+                  // Hero headline
+                  Text(
+                    'Tu comunidad de',
+                    style: GoogleFonts.nunito(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkTextPrimary,
+                      height: 1.15,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'ayuda ',
+                        style: GoogleFonts.nunito(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkTextPrimary,
+                          height: 1.15,
+                        ),
+                      ),
+                      Text(
+                        'local',
+                        style: GoogleFonts.nunito(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.gold,
+                          height: 1.15,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Encuentra ayuda de confianza cerca de ti o comparte tu tiempo cuando estés libre. Pago seguro, sin agencias, sin comisiones ocultas.',
+                    style: GoogleFonts.inter(
+                      fontSize: 17,
+                      color: AppColors.darkTextSecondary,
+                      height: 1.6,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  // Hero CTA
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PostJobScreen(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_circle_outline, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Publicar un trabajo', style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Gold "Gratis" badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '⭐ Gratis para todos ⭐',
+                          style: GoogleFonts.nunito(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.navyDarker,
+                          ),
+                        ),
+                        Text(
+                          'hasta 31 julio 2026',
+                          style: GoogleFonts.nunito(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navyDarker.withOpacity(0.85),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Gold Stats Strip
+        Container(
+          width: double.infinity,
+          color: AppColors.gold,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Wrap(
+                spacing: 32,
+                runSpacing: 16,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildStatItem('🚀', 'Lanzamiento Q2 2026'),
+                  _buildStatItem('📍', 'Empezamos en Alicante'),
+                  _buildStatItem('🔒', 'Pago 100% seguro'),
+                  _buildStatItem('💰', 'Sin comisiones ocultas'),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // "No Greedy Rabbit" Section
+        Container(
+          width: double.infinity,
+          color: AppColors.navyDark,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(
+                children: [
+                  // Rabbit image placeholder (emoji for now)
+                  Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      color: AppColors.darkOverlay,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Text('🐰', style: TextStyle(fontSize: 64)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'El ayudante cobra el 100%.',
+                    style: GoogleFonts.nunito(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkTextPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    'Siempre.',
+                    style: GoogleFonts.nunito(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.gold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Otras plataformas se quedan con el 20-30% de cada trabajo. Nosotros no cobramos comisión por transacción.',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: AppColors.darkTextSecondary,
+                      height: 1.6,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  // Comparison cards
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0x26DC3232), // red tint
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0x4DDC3232)),
+                          ),
+                          child: Column(
+                            children: [
+                              Text('OTRAS APPS', style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFE85555),
+                                letterSpacing: 0.5,
+                              )),
+                              const SizedBox(height: 4),
+                              Text('20-30%', style: GoogleFonts.nunito(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.darkTextPrimary,
+                              )),
+                              Text('comisión', style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.darkTextMuted,
+                              )),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            children: [
+                              Text('MI MANITAS', style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.gold,
+                                letterSpacing: 0.5,
+                              )),
+                              const SizedBox(height: 4),
+                              Text('0%', style: GoogleFonts.nunito(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.darkTextPrimary,
+                              )),
+                              Text('para siempre*', style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.darkTextMuted,
+                              )),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '*Los buscadores de ayuda pagarán una pequeña cuota mensual. Los ayudantes siempre gratis.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.darkTextMuted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // How It Works Section
+        Container(
+          width: double.infinity,
+          color: AppColors.background,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Column(
+                children: [
+                  Text(
+                    'Cómo funciona',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navyDark,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tres pasos sencillos para conseguir ayuda',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  Wrap(
+                    spacing: 24,
+                    runSpacing: 24,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildStep('1', 'Publica', 'Describe lo que necesitas y pon tu precio o tarifa por hora.'),
+                      _buildStep('2', 'Conecta', 'Recibe solicitudes de manitas verificados de tu zona.'),
+                      _buildStep('3', 'Paga seguro', 'El dinero se guarda en depósito hasta que el trabajo esté hecho.'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Features Grid
+        Container(
+          width: double.infinity,
+          color: AppColors.surface,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Column(
+                children: [
+                  Text(
+                    'Características',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navyDark,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  Wrap(
+                    spacing: 20,
+                    runSpacing: 20,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildFeatureCard('🔒', 'Pago en depósito', 'El dinero está seguro hasta que confirmes que el trabajo está bien.'),
+                      _buildFeatureCard('📅', 'Calendario', 'Los manitas muestran cuándo están libres.'),
+                      _buildFeatureCard('💬', 'Mensajería', 'Chat directo con los candidatos.'),
+                      _buildFeatureCard('📱', 'Verificación', 'Todos los usuarios verificados por teléfono.'),
+                      _buildFeatureCard('📍', '100% local', 'Hecho para tu barrio, no un marketplace global.'),
+                      _buildFeatureCard('💰', 'Precios claros', 'Tú pones el precio. Sin sorpresas.'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Trust Section
+        Container(
+          width: double.infinity,
+          color: AppColors.background,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 900),
+              child: Column(
+                children: [
+                  Text(
+                    'Confianza garantizada',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navyDark,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  Wrap(
+                    spacing: 20,
+                    runSpacing: 20,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildTrustItem('🔐', 'Depósito seguro', 'Stripe protege tu dinero'),
+                      _buildTrustItem('✓', 'Usuarios verificados', 'Teléfono confirmado'),
+                      _buildTrustItem('⚖️', 'Cumplimiento legal', 'GDPR y normativa española'),
+                      _buildTrustItem('⭐', 'Reseñas reales', 'De transacciones completadas'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Final CTA Section
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.navyDark, AppColors.navyDarker],
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Column(
+                children: [
+                  Text(
+                    '¿Listo para empezar?',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Publica tu primer trabajo gratis y encuentra ayuda en tu barrio.',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: AppColors.darkTextSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const PostJobScreen(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                        ),
+                        child: Text('Publicar trabajo', style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        )),
+                      ),
+                      const SizedBox(width: 16),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const MyJobsScreen(),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                          side: BorderSide(color: AppColors.darkTextMuted),
+                          foregroundColor: AppColors.darkTextPrimary,
+                        ),
+                        child: Text('Ver mis trabajos', style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        )),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(String icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 6),
+        Text(text, style: GoogleFonts.nunito(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.navyDarker,
+        )),
+      ],
+    );
+  }
+
+  Widget _buildFeatureCard(String icon, String title, String description) {
+    return Container(
+      width: 270,
+      padding: const EdgeInsets.all(24),
+      decoration: AppDecorations.card(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.orangeLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
+          ),
+          const SizedBox(height: 16),
+          Text(title, style: GoogleFonts.nunito(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navyDark,
+          )),
+          const SizedBox(height: 6),
+          Text(description, style: GoogleFonts.inter(
+            fontSize: 14,
+            color: AppColors.textMuted,
+            height: 1.5,
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrustItem(String icon, String title, String subtitle) {
+    return Container(
+      width: 200,
+      padding: const EdgeInsets.all(24),
+      decoration: AppDecorations.card(),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              color: AppColors.navyVeryLight,
+              shape: BoxShape.circle,
+            ),
+            child: Center(child: Text(icon, style: const TextStyle(fontSize: 28))),
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: GoogleFonts.nunito(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navyDark,
+          ), textAlign: TextAlign.center),
+          const SizedBox(height: 4),
+          Text(subtitle, style: GoogleFonts.inter(
+            fontSize: 13,
+            color: AppColors.textMuted,
+          ), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep(String number, String title, String description) {
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(28),
+      decoration: AppDecorations.card(),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: AppColors.orange,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(number, style: GoogleFonts.nunito(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              )),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(title, style: GoogleFonts.nunito(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navyDark,
+          )),
+          const SizedBox(height: 8),
+          Text(description, style: GoogleFonts.inter(
+            fontSize: 14,
+            color: AppColors.textMuted,
+            height: 1.5,
+          ), textAlign: TextAlign.center),
+        ],
       ),
     );
   }
@@ -1376,103 +1764,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Marketing Page Widgets ---
-
-  Widget _buildStep(String number, String title, String description) {
-    return Container(
-      width: 280,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.navyShadow,
-            blurRadius: 24,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.navyDark,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 15,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeature(String icon, String title, String description) {
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            icon,
-            style: const TextStyle(fontSize: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
