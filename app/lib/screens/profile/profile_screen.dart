@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../main.dart';
 import '../../widgets/reviews_list.dart';
 import '../../app_theme.dart';
@@ -85,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               Text(
                 'Perfil no encontrado',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   color: AppColors.textMuted,
                 ),
@@ -116,7 +117,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
-                // TODO: Navigate to edit profile screen
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Función de edición próximamente'),
@@ -129,278 +129,314 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Profile header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.navyShadow,
-                      blurRadius: 10,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Avatar
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: const BoxDecoration(
-                        color: AppColors.navyVeryLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
-                          style: const TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.navyDark,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Name with verification badge
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Profile header card
+                  Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: AppDecorations.card(),
+                    child: Column(
                       children: [
-                        Text(
-                          fullName,
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                        // Avatar
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.navyDark, AppColors.navyLight],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.navyDark.withOpacity(0.3),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
+                              style: GoogleFonts.nunito(
+                                fontSize: 42,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
-                        if (phoneVerified) ...[
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.verified,
-                            size: 24,
-                            color: AppColors.info,
+                        const SizedBox(height: 20),
+
+                        // Name with verification badge
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              fullName,
+                              style: GoogleFonts.nunito(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.navyDark,
+                              ),
+                            ),
+                            if (phoneVerified) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.info,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Location
+                        if (barrio != null)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 18,
+                                color: AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                barrio,
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textMuted,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        // Rating badge
+                        if (averageRating != null && reviewCount > 0) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldLight,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.gold.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.star,
+                                  color: AppColors.gold,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  averageRating.toStringAsFixed(1),
+                                  style: GoogleFonts.nunito(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.navyDark,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '($reviewCount ${reviewCount == 1 ? 'reseña' : 'reseñas'})',
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textMuted,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                  const SizedBox(height: 20),
 
-                    // Location
-                    if (barrio != null)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  // Bio section
+                  if (bio != null && bio.isNotEmpty)
+                    _buildInfoCard(
+                      icon: Icons.person_outline,
+                      title: 'Sobre mí',
+                      child: Text(
+                        bio,
+                        style: GoogleFonts.inter(
+                          color: AppColors.textMuted,
+                          fontSize: 15,
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+
+                  // Contact info (only for own profile)
+                  if (_isOwnProfile && phone != null) ...[
+                    const SizedBox(height: 16),
+                    _buildInfoCard(
+                      icon: Icons.contact_phone_outlined,
+                      title: 'Información de contacto',
+                      child: Row(
                         children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 18,
-                            color: AppColors.textMuted,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            barrio,
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 16,
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.navyVeryLight,
+                              borderRadius: BorderRadius.circular(10),
                             ),
+                            child: const Icon(
+                              Icons.phone,
+                              size: 20,
+                              color: AppColors.navyDark,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                phone,
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              if (phoneVerified)
+                                Text(
+                                  'Verificado',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),
-
-                    // Rating (if exists)
-                    if (averageRating != null && reviewCount > 0) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.navyVeryLight,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: AppColors.gold,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              averageRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.navyDark,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '($reviewCount ${reviewCount == 1 ? 'reseña' : 'reseñas'})',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 24),
 
-              // Bio section
-              if (bio != null && bio.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.navyShadow,
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Sobre mí',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        bio,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 16,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Contact info (only for own profile)
-              if (_isOwnProfile && phone != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: AppColors.navyShadow,
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Información de contacto',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.phone,
-                            size: 20,
+                  // Reviews section
+                  if (reviewCount > 0) ...[
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        const Icon(Icons.reviews_outlined, size: 22, color: AppColors.navyDark),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Reseñas',
+                          style: GoogleFonts.nunito(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                             color: AppColors.navyDark,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            phone,
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 16,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ReviewsList(userId: widget.userId ?? supabase.auth.currentUser!.id),
+                  ],
+
+                  // Empty state for no reviews
+                  if (reviewCount == 0) ...[
+                    const SizedBox(height: 28),
+                    Container(
+                      padding: const EdgeInsets.all(48),
+                      decoration: AppDecorations.card(),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: const BoxDecoration(
+                              color: AppColors.navyVeryLight,
+                              shape: BoxShape.circle,
                             ),
+                            child: const Icon(
+                              Icons.rate_review_outlined,
+                              size: 40,
+                              color: AppColors.navyLight,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Sin reseñas todavía',
+                            style: GoogleFonts.nunito(
+                              color: AppColors.navyDark,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Las reseñas aparecerán aquí después de completar trabajos',
+                            style: GoogleFonts.inter(
+                              color: AppColors.textMuted,
+                              fontSize: 14,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ],
-
-              // Reviews section
-              if (reviewCount > 0) ...[
-                const SizedBox(height: 24),
-                const Text(
-                  'Reseñas',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ReviewsList(userId: widget.userId ?? supabase.auth.currentUser!.id),
-              ],
-
-              // Empty state for no reviews
-              if (reviewCount == 0) ...[
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(48),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.rate_review_outlined,
-                        size: 64,
-                        color: AppColors.border,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Sin reseñas todavía',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Las reseñas aparecerán aquí después de completar trabajos',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppDecorations.card(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: AppColors.navyDark),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.nunito(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.navyDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
       ),
     );
   }

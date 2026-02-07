@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app_theme.dart';
@@ -151,7 +152,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'No tienes mensajes todavía',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 18,
                           color: AppColors.textMuted,
                         ),

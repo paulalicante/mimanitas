@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/geocoding_service.dart';
@@ -538,7 +539,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               const SizedBox(height: 16),
               Text(
                 'Trabajo no encontrado',
-                style: const TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 18,
                   color: AppColors.textMuted,
                 ),

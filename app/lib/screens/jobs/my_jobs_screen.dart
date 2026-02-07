@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
 import 'post_job_screen.dart';
@@ -487,7 +488,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                 _filterStatus == 'active'
                                     ? 'No tienes trabajos activos'
                                     : 'No tienes trabajos completados',
-                                style: const TextStyle(fontSize: 16, color: AppColors.textMuted),
+                                style: GoogleFonts.inter(fontSize: 16, color: AppColors.textMuted),
                               ),
                             )
                           : RefreshIndicator(

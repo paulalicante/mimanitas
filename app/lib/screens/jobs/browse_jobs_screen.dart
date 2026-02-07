@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
 import 'job_detail_screen.dart';
@@ -486,10 +487,10 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                 Expanded(
                                                   child: Text(
                                                     job['title'],
-                                                    style: const TextStyle(
+                                                    style: GoogleFonts.nunito(
                                                       fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: AppColors.navyDark,
                                                     ),
                                                   ),
                                                 ),
@@ -497,9 +498,9 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                   job['price_type'] == 'fixed'
                                                       ? '${job['price_amount']}€'
                                                       : '${job['price_amount']}€/h',
-                                                  style: const TextStyle(
+                                                  style: GoogleFonts.nunito(
                                                     fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
+                                                    fontWeight: FontWeight.w800,
                                                     color: AppColors.orange,
                                                   ),
                                                 ),

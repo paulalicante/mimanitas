@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../app_theme.dart';
@@ -196,18 +197,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Mi Manitas',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.navyDark,
-                      ),
+                  style: GoogleFonts.nunito(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navyDark,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Bienvenido de nuevo',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textMuted,
-                      ),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: AppColors.textMuted,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),

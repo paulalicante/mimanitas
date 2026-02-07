@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
@@ -454,16 +455,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Que necesitas?',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    '¿Qué necesitas?',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navyDark,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Describe el trabajo que necesitas realizar',
-                    style: TextStyle(color: AppColors.textMuted),
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                   const SizedBox(height: 32),
 
@@ -548,11 +553,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   // Location: saved address chips + autocomplete
                   if (_savedLocations.isNotEmpty) ...[
                     Text(
-                      'Direccion',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      'Dirección',
+                      style: GoogleFonts.nunito(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navyDark,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -726,11 +732,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
                   // Scheduling section
                   Text(
-                    'Cuando lo necesitas?',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    '¿Cuándo lo necesitas?',
+                    style: GoogleFonts.nunito(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.navyDark,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   SwitchListTile(
@@ -823,7 +830,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   // Price type
                   Text(
                     'Tipo de precio',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: GoogleFonts.nunito(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.navyDark,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
