@@ -260,8 +260,23 @@ class _HomeScreenState extends State<HomeScreen> {
           .eq('applicant_id', userId);
 
       final appliedJobIds = appliedJobs.map((a) => a['job_id']).toSet();
-      final unappliedJobs =
-          openJobs.where((j) => !appliedJobIds.contains(j['id'])).toList();
+
+      // Filter out jobs the helper has already applied to AND jobs with past dates
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      final unappliedJobs = openJobs.where((j) {
+        // Exclude jobs helper has already applied to
+        if (appliedJobIds.contains(j['id'])) return false;
+
+        // Exclude jobs with scheduled dates in the past
+        final scheduledDate = j['scheduled_date'] as String?;
+        if (scheduledDate != null && scheduledDate.compareTo(todayStr) < 0) {
+          return false;
+        }
+
+        return true;
+      }).toList();
 
       // Extract helper prefs for classification
       final helperLat = (_profileLocation?['location_lat'] as num?)?.toDouble();
@@ -320,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .select('''
             *,
             jobs!applications_job_id_fkey(
-              id, title, scheduled_date, scheduled_time, status,
+              id, title, scheduled_date, scheduled_time, status, barrio, location_address,
               profiles!jobs_poster_id_fkey(name)
             )
           ''')
@@ -402,41 +417,36 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Center(
           child: Column(
             children: [
-              // Header
+              // Header with MiManitas Logo
               Container(
                 constraints: const BoxConstraints(maxWidth: 900),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // MiManitas Logo (matching landing page)
                   Row(
                     children: [
-                      const Text(
-                        '🔧',
-                        style: TextStyle(fontSize: 28),
+                      SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CustomPaint(
+                          painter: _MiManitasLogoPainter(),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Mi Manitas',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.navyDark,
-                            ),
+                      const SizedBox(width: 10),
+                      RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.nunito(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
-                          if (_userName != null && _userName!.isNotEmpty)
-                            Text(
-                              'Hola, $_userName',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                        ],
+                          children: const [
+                            TextSpan(text: 'Mi', style: TextStyle(color: AppColors.orange)),
+                            TextSpan(text: 'Manitas', style: TextStyle(color: AppColors.gold)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -1383,26 +1393,69 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 900),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildAvailabilityCard(),
-          const SizedBox(height: 16),
-          _buildJobsOverviewCard(),
-          const SizedBox(height: 16),
-          if (_upcomingJobs.isNotEmpty) ...[
-            _buildUpcomingJobsCard(),
-            const SizedBox(height: 16),
-          ],
-          _buildPreferencesSummaryCard(),
-          const SizedBox(height: 16),
-          _buildPaymentsSummaryCard(),
-          const SizedBox(height: 24),
-        ],
-      ),
+    return Column(
+      children: [
+        // Helper Hero Header
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.navyDark, AppColors.navyDarker],
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 700),
+              child: Column(
+                children: [
+                  Text(
+                    '¡Hola, ${_userName ?? "Manitas"}!',
+                    style: GoogleFonts.nunito(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aquí tienes tu resumen de hoy',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: AppColors.darkTextSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Dashboard Cards
+        Container(
+          constraints: const BoxConstraints(maxWidth: 900),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAvailabilityCard(),
+              const SizedBox(height: 16),
+              _buildJobsOverviewCard(),
+              const SizedBox(height: 16),
+              if (_upcomingJobs.isNotEmpty) ...[
+                _buildUpcomingJobsCard(),
+                const SizedBox(height: 16),
+              ],
+              _buildPreferencesSummaryCard(),
+              const SizedBox(height: 16),
+              _buildPaymentsSummaryCard(),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1437,8 +1490,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icon(icon, color: AppColors.navyDark, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(title, style: const TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.bold,
+                  child: Text(title, style: GoogleFonts.nunito(
+                    fontSize: 17, fontWeight: FontWeight.w700,
+                    color: AppColors.navyDark,
                   )),
                 ),
                 if (trailing != null) trailing,
@@ -1481,9 +1535,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadDashboardData();
       },
       child: _availabilitySlots.isEmpty
-          ? const Text(
+          ? Text(
               'No has configurado tu disponibilidad. Toca para empezar.',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1492,9 +1546,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Expanded(
                   child: Column(
                     children: [
-                      Text(dayAbbrevs[i], style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                      Text(dayAbbrevs[i], style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
                         color: hasSlots ? AppColors.navyDark : AppColors.textMuted,
                       )),
                       const SizedBox(height: 4),
@@ -1514,11 +1568,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 2),
                         ...slotsByDisplayDay[i]!.take(2).map((s) => Text(
                           s,
-                          style: const TextStyle(fontSize: 9, color: AppColors.textMuted),
+                          style: GoogleFonts.inter(fontSize: 9, color: AppColors.textMuted),
                         )),
                         if (slotsByDisplayDay[i]!.length > 2)
                           Text('+${slotsByDisplayDay[i]!.length - 2}',
-                            style: const TextStyle(fontSize: 9, color: AppColors.textMuted)),
+                            style: GoogleFonts.inter(fontSize: 9, color: AppColors.textMuted)),
                       ],
                     ],
                   ),
@@ -1545,22 +1599,22 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             '$_matchedJobCount',
-            style: const TextStyle(
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              color: AppColors.navyDark,
+            style: GoogleFonts.nunito(
+              fontSize: 42,
+              fontWeight: FontWeight.w800,
+              color: AppColors.orange,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'para ti',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                Text(
+                  'trabajos para ti',
+                  style: GoogleFonts.nunito(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.navyDark,
                   ),
                 ),
@@ -1568,8 +1622,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      '$_nearbyJobCount mas en tu zona',
-                      style: const TextStyle(
+                      '$_nearbyJobCount más en tu zona',
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         color: AppColors.textMuted,
                       ),
@@ -1594,15 +1648,17 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           _loadDashboardData();
         },
-        child: const Text('Ver todos',
-          style: TextStyle(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.w600)),
+        child: Text('Ver todos',
+          style: GoogleFonts.inter(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.w600)),
       ),
       child: Column(
         children: _upcomingJobs.take(3).map((app) {
           final job = app['jobs'] as Map<String, dynamic>;
-          final posterName = job['profiles']?['name'] as String? ?? 'Cliente';
           final scheduledDate = job['scheduled_date'] as String?;
           final scheduledTime = job['scheduled_time'] as String?;
+          final barrio = job['barrio'] as String?;
+          final locationAddress = job['location_address'] as String?;
+          final location = barrio ?? locationAddress;
 
           return InkWell(
             onTap: () async {
@@ -1614,7 +1670,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _loadDashboardData();
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: Row(
                 children: [
                   Expanded(
@@ -1622,16 +1678,46 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(job['title'] as String,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 2),
-                        Text(
-                          [
-                            posterName,
-                            if (scheduledDate != null)
-                              _formatJobDate(scheduledDate, scheduledTime),
-                          ].join(' — '),
-                          style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                        ),
+                          style: GoogleFonts.nunito(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.navyDark)),
+                        const SizedBox(height: 4),
+                        // Date and time row
+                        if (scheduledDate != null)
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_today, size: 13, color: AppColors.textMuted),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatJobDate(scheduledDate, scheduledTime),
+                                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                              ),
+                              if (scheduledTime != null) ...[
+                                const SizedBox(width: 12),
+                                const Icon(Icons.access_time, size: 13, color: AppColors.textMuted),
+                                const SizedBox(width: 4),
+                                Text(
+                                  scheduledTime.substring(0, 5),
+                                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                                ),
+                              ],
+                            ],
+                          ),
+                        // Location row
+                        if (location != null) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on, size: 13, color: AppColors.textMuted),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  location,
+                                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1679,13 +1765,13 @@ class _HomeScreenState extends State<HomeScreen> {
           if (paused)
             Container(
               margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: AppColors.orangeLight,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text('Notificaciones pausadas',
-                style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.bold, fontSize: 13)),
+              child: Text('Notificaciones pausadas',
+                style: GoogleFonts.inter(color: AppColors.orange, fontWeight: FontWeight.w600, fontSize: 13)),
             ),
           if (barrio != null)
             _buildPrefRow(Icons.home, barrio),
@@ -1706,13 +1792,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPrefRow(IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           Icon(icon, size: 16, color: AppColors.textMuted),
           const SizedBox(width: 8),
           Flexible(child: Text(text,
-            style: const TextStyle(fontSize: 13, color: AppColors.textMuted))),
+            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted))),
         ],
       ),
     );
@@ -1730,8 +1816,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadDashboardData();
       },
       child: _balance == null
-          ? const Text('Configura tu cuenta de pagos para empezar',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted))
+          ? Text('Configura tu cuenta de pagos para empezar',
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted))
           : Row(
               children: [
                 _buildBalancePill('Disponible', _balance!.formattedAvailable, AppColors.success),
@@ -1753,15 +1839,51 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: TextStyle(
-              fontSize: 11, color: color, fontWeight: FontWeight.w500)),
+            Text(label, style: GoogleFonts.inter(
+              fontSize: 12, color: color, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
-            Text(amount, style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+            Text(amount, style: GoogleFonts.nunito(
+              fontSize: 22, fontWeight: FontWeight.w800, color: color)),
           ],
         ),
       ),
     );
   }
 
+}
+
+/// Custom painter for the MiManitas logo (orange circle + gold smile)
+class _MiManitasLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centerX = size.width / 2;
+
+    // Orange circle (head)
+    final circlePaint = Paint()
+      ..color = AppColors.orange
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(centerX, size.height * 0.38),
+      size.width * 0.22,
+      circlePaint,
+    );
+
+    // Gold smile curve
+    final smilePaint = Paint()
+      ..color = AppColors.gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.12
+      ..strokeCap = StrokeCap.round;
+
+    final smilePath = Path();
+    smilePath.moveTo(size.width * 0.18, size.height * 0.7);
+    smilePath.quadraticBezierTo(
+      centerX, size.height * 0.95,
+      size.width * 0.82, size.height * 0.7,
+    );
+    canvas.drawPath(smilePath, smilePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

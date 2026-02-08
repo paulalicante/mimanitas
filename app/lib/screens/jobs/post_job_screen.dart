@@ -7,7 +7,11 @@ import '../../widgets/places_autocomplete_field.dart';
 import '../auth/phone_verification_screen.dart';
 
 class PostJobScreen extends StatefulWidget {
-  const PostJobScreen({super.key});
+  final Map<String, dynamic>? jobToEdit;
+
+  const PostJobScreen({super.key, this.jobToEdit});
+
+  bool get isEditing => jobToEdit != null;
 
   @override
   State<PostJobScreen> createState() => _PostJobScreenState();
@@ -59,6 +63,44 @@ class _PostJobScreenState extends State<PostJobScreen> {
     super.initState();
     _loadSkills();
     _loadSavedLocations();
+    _populateFormIfEditing();
+  }
+
+  void _populateFormIfEditing() {
+    final job = widget.jobToEdit;
+    if (job == null) return;
+
+    _titleController.text = job['title'] ?? '';
+    _descriptionController.text = job['description'] ?? '';
+    _priceController.text = (job['price_amount'] as num?)?.toString() ?? '';
+    _priceType = job['price_type'] ?? 'fixed';
+    _selectedSkill = job['skill_id'];
+    _selectedAddress = job['location_address'];
+    _selectedLat = (job['location_lat'] as num?)?.toDouble();
+    _selectedLng = (job['location_lng'] as num?)?.toDouble();
+    _selectedBarrio = job['barrio'];
+    _isFlexible = job['is_flexible'] ?? false;
+    _estimatedDuration = job['estimated_duration_minutes'];
+
+    // Parse scheduled date/time
+    final scheduledDate = job['scheduled_date'] as String?;
+    if (scheduledDate != null) {
+      try {
+        _selectedDate = DateTime.parse(scheduledDate);
+      } catch (_) {}
+    }
+    final scheduledTime = job['scheduled_time'] as String?;
+    if (scheduledTime != null && scheduledTime.length >= 5) {
+      try {
+        final parts = scheduledTime.split(':');
+        _selectedTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      } catch (_) {}
+    }
+
+    // If we have an address, don't show autocomplete initially
+    if (_selectedAddress != null) {
+      _showAutocomplete = false;
+    }
   }
 
   @override
@@ -374,7 +416,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
       }
 
       final jobData = {
-        'poster_id': user.id,
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'skill_id': _selectedSkill,
@@ -384,17 +425,25 @@ class _PostJobScreenState extends State<PostJobScreen> {
         'barrio': _selectedBarrio,
         'price_type': _priceType,
         'price_amount': double.parse(_priceController.text),
-        'status': 'open',
         'is_flexible': _isFlexible,
         'scheduled_date':
             _isFlexible ? null : _selectedDate?.toIso8601String().split('T')[0],
         'scheduled_time': _isFlexible ? null : _formatTimeForDb(_selectedTime),
         'estimated_duration_minutes': _estimatedDuration,
+        'updated_at': DateTime.now().toIso8601String(),
       };
 
-      print('DEBUG: Submitting job with data: $jobData');
-
-      await supabase.from('jobs').insert(jobData);
+      if (widget.isEditing) {
+        // Update existing job
+        print('DEBUG: Updating job ${widget.jobToEdit!['id']} with data: $jobData');
+        await supabase.from('jobs').update(jobData).eq('id', widget.jobToEdit!['id']);
+      } else {
+        // Insert new job
+        jobData['poster_id'] = user.id;
+        jobData['status'] = 'open';
+        print('DEBUG: Submitting new job with data: $jobData');
+        await supabase.from('jobs').insert(jobData);
+      }
 
       // Save new address if requested
       if (_saveNewAddress &&
@@ -421,10 +470,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
       print('DEBUG: Job inserted successfully');
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true); // Return true to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Trabajo publicado con exito!'),
+          SnackBar(
+            content: Text(widget.isEditing ? 'Trabajo actualizado!' : 'Trabajo publicado con exito!'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -442,7 +491,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Publicar trabajo'),
+        title: Text(widget.isEditing ? 'Editar trabajo' : 'Publicar trabajo'),
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -905,9 +954,9 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                   AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text(
-                            'Publicar trabajo',
-                            style: TextStyle(
+                        : Text(
+                            widget.jobToEdit != null ? 'Guardar cambios' : 'Publicar trabajo',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),

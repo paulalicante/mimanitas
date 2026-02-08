@@ -79,7 +79,17 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
       }
 
       // Execute query with ordering
-      final jobs = await query.order('created_at', ascending: false);
+      final allJobs = await query.order('created_at', ascending: false);
+
+      // Filter out jobs with past scheduled dates
+      final today = DateTime.now();
+      final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final jobs = allJobs.where((job) {
+        final scheduledDate = job['scheduled_date'] as String?;
+        // Keep jobs without a date, or with today or future dates
+        if (scheduledDate == null) return true;
+        return scheduledDate.compareTo(todayStr) >= 0;
+      }).toList();
 
       // Check which jobs the current user has applied to
       final jobsWithStatus = await Future.wait(

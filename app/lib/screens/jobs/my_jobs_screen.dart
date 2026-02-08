@@ -106,7 +106,17 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
     if (_filterStatus == 'active') {
       return _jobs.where((job) {
         final status = job['status'] as String;
-        return status == 'open' || status == 'assigned' || status == 'in_progress';
+        final isActive = status == 'open' || status == 'assigned' || status == 'in_progress';
+        // Exclude past-due open jobs from active (they go to archived)
+        if (status == 'open' && _isJobPastDue(job)) return false;
+        return isActive;
+      }).toList();
+    }
+    if (_filterStatus == 'archived') {
+      // Past-due open jobs that haven't been assigned yet
+      return _jobs.where((job) {
+        final status = job['status'] as String;
+        return status == 'open' && _isJobPastDue(job);
       }).toList();
     }
     if (_filterStatus == 'completed') {
@@ -116,6 +126,13 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
       }).toList();
     }
     return _jobs;
+  }
+
+  int get _archivedCount {
+    return _jobs.where((job) {
+      final status = job['status'] as String;
+      return status == 'open' && _isJobPastDue(job);
+    }).length;
   }
 
   Future<void> _deleteJob(String jobId) async {
@@ -136,6 +153,163 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al eliminar: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showReactivateDialog(Map<String, dynamic> job) async {
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+    bool isFlexible = false;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Reactivar trabajo', style: GoogleFonts.nunito(fontWeight: FontWeight.w700)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Este trabajo tiene una fecha pasada. Elige una nueva fecha o marca como horario flexible.',
+                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 20),
+              // Flexible toggle
+              SwitchListTile(
+                title: Text('Horario flexible', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                subtitle: Text('Sin fecha específica', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+                value: isFlexible,
+                activeColor: AppColors.orange,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (value) {
+                  setDialogState(() {
+                    isFlexible = value;
+                    if (value) {
+                      selectedDate = null;
+                      selectedTime = null;
+                    }
+                  });
+                },
+              ),
+              if (!isFlexible) ...[
+                const SizedBox(height: 12),
+                // Date picker
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now().add(const Duration(days: 1)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setDialogState(() => selectedDate = date);
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text(
+                    selectedDate != null
+                        ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                        : 'Seleccionar fecha',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Time picker
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      setDialogState(() => selectedTime = time);
+                    }
+                  },
+                  icon: const Icon(Icons.access_time),
+                  label: Text(
+                    selectedTime != null
+                        ? '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}'
+                        : 'Seleccionar hora (opcional)',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: (isFlexible || selectedDate != null)
+                  ? () => Navigator.pop(context, {
+                        'isFlexible': isFlexible,
+                        'date': selectedDate,
+                        'time': selectedTime,
+                      })
+                  : null,
+              child: const Text('Reactivar'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      await _reactivateJob(job['id'], result);
+    }
+  }
+
+  Future<void> _reactivateJob(String jobId, Map<String, dynamic> options) async {
+    try {
+      final isFlexible = options['isFlexible'] as bool;
+      final date = options['date'] as DateTime?;
+      final time = options['time'] as TimeOfDay?;
+
+      final updateData = <String, dynamic>{
+        'is_flexible': isFlexible,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (isFlexible) {
+        updateData['scheduled_date'] = null;
+        updateData['scheduled_time'] = null;
+      } else if (date != null) {
+        updateData['scheduled_date'] = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        if (time != null) {
+          updateData['scheduled_time'] = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
+        } else {
+          updateData['scheduled_time'] = null;
+        }
+      }
+
+      await supabase.from('jobs').update(updateData).eq('id', jobId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trabajo reactivado'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        _loadMyJobs();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al reactivar: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -399,6 +573,35 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
     }
   }
 
+  String _formatScheduledDate(String? dateStr, String? timeStr) {
+    if (dateStr == null) return 'Sin fecha';
+    try {
+      final date = DateTime.parse(dateStr);
+      final dayNames = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+      final monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      final dayName = dayNames[date.weekday % 7];
+      final monthName = monthNames[date.month - 1];
+      final dateFormatted = '$dayName, ${date.day} $monthName';
+
+      if (timeStr != null && timeStr.length >= 5) {
+        return '$dateFormatted a las ${timeStr.substring(0, 5)}';
+      }
+      return dateFormatted;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  bool _isJobPastDue(Map<String, dynamic> job) {
+    final scheduledDate = job['scheduled_date'] as String?;
+    if (scheduledDate == null) return false;
+    if (job['is_flexible'] == true) return false;
+
+    final today = DateTime.now();
+    final todayStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    return scheduledDate.compareTo(todayStr) < 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -463,10 +666,21 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                               'active',
                               _jobs.where((j) {
                                 final s = j['status'] as String;
-                                return s == 'open' || s == 'assigned' || s == 'in_progress';
+                                final isActive = s == 'open' || s == 'assigned' || s == 'in_progress';
+                                if (s == 'open' && _isJobPastDue(j)) return false;
+                                return isActive;
                               }).length,
                             ),
                             const SizedBox(width: 8),
+                            if (_archivedCount > 0) ...[
+                              _buildFilterChip(
+                                'Archivados',
+                                'archived',
+                                _archivedCount,
+                                color: AppColors.warning,
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             _buildFilterChip(
                               'Completados',
                               'completed',
@@ -596,6 +810,29 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                       fontSize: 14,
                                     ),
                                   ),
+                                // Scheduled date/time display
+                                if (job['scheduled_date'] != null || job['is_flexible'] == true) ...[
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        job['is_flexible'] == true ? Icons.event_available : Icons.calendar_today,
+                                        size: 14,
+                                        color: AppColors.textMuted,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        job['is_flexible'] == true
+                                            ? 'Horario flexible'
+                                            : _formatScheduledDate(job['scheduled_date'], job['scheduled_time']),
+                                        style: const TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 const SizedBox(height: 8),
                                 Text(
                                   job['description'],
@@ -636,6 +873,43 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                     ),
                                   ],
                                 ),
+
+                                // Archived indicator for past-due jobs
+                                if (jobStatus == 'open' && _isJobPastDue(job)) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.warningLight,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.warning.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.schedule,
+                                          size: 16,
+                                          color: AppColors.warning,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Fecha pasada - Reactivar para publicar',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.warning,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
 
                                 // Review status indicator for completed jobs
                                 if (jobStatus == 'completed' &&
@@ -690,6 +964,19 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
+                                    // Reactivate button for archived (past-due) jobs
+                                    if (jobStatus == 'open' && _isJobPastDue(job)) ...[
+                                      ElevatedButton.icon(
+                                        onPressed: () => _showReactivateDialog(job),
+                                        icon: const Icon(Icons.refresh, size: 18),
+                                        label: const Text('Reactivar'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.warning,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
                                     // Message button for assigned jobs
                                     if ((job['status'] == 'assigned' || job['status'] == 'completed') &&
                                         assignedHelper != null) ...[
@@ -753,14 +1040,11 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                     const SizedBox(width: 8),
                                     TextButton.icon(
                                       onPressed: () {
-                                        // TODO: Edit functionality
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                'Función de edición próximamente'),
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) => PostJobScreen(jobToEdit: job),
                                           ),
-                                        );
+                                        ).then((_) => _loadMyJobs());
                                       },
                                       icon: const Icon(Icons.edit, size: 18),
                                       label: const Text('Editar'),
@@ -807,8 +1091,9 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, String value, int count) {
+  Widget _buildFilterChip(String label, String value, int count, {Color? color}) {
     final isSelected = _filterStatus == value;
+    final chipColor = color ?? AppColors.navyDark;
     return FilterChip(
       label: Text('$label ($count)'),
       selected: isSelected,
@@ -817,17 +1102,17 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
           _filterStatus = value;
         });
       },
-      selectedColor: AppColors.navyDark,
+      selectedColor: chipColor,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : AppColors.navyDark,
+        color: isSelected ? Colors.white : chipColor,
         fontWeight: FontWeight.w600,
       ),
-      backgroundColor: AppColors.navyVeryLight,
+      backgroundColor: color != null ? color.withValues(alpha: 0.1) : AppColors.navyVeryLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected ? AppColors.navyDark : Colors.transparent,
+          color: isSelected ? chipColor : Colors.transparent,
         ),
       ),
     );
