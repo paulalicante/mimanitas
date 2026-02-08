@@ -1424,7 +1424,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildAvailabilityCard(),
               const SizedBox(height: 16),
-              _buildAssignedJobsCard(),
+              _buildHelperCalendarCard(),
               const SizedBox(height: 16),
               _buildJobsOverviewCard(),
               const SizedBox(height: 16),
@@ -1617,111 +1617,239 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAssignedJobsCard() {
+  Widget _buildHelperCalendarCard() {
+    // Build the 7-day calendar data
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final next7Days = List.generate(7, (i) => today.add(Duration(days: i)));
+
+    // Group helper's upcoming jobs by date
+    final jobsByDate = <String, List<Map<String, dynamic>>>{};
+    for (final app in _upcomingJobs) {
+      final job = app['jobs'] as Map<String, dynamic>?;
+      if (job == null) continue;
+      final dateStr = job['scheduled_date'] as String?;
+      if (dateStr != null) {
+        jobsByDate.putIfAbsent(dateStr, () => []).add(app);
+      }
+    }
+
+    // Filter to jobs within next 7 days
+    final next7DayStrings = next7Days.map((d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}'
+    ).toSet();
+    final jobsNext7Days = _upcomingJobs.where((app) {
+      final job = app['jobs'] as Map<String, dynamic>?;
+      final dateStr = job?['scheduled_date'] as String?;
+      return dateStr != null && next7DayStrings.contains(dateStr);
+    }).toList();
+
     return _buildDashboardCard(
-      icon: Icons.assignment_turned_in,
-      title: 'Trabajos asignados',
-      trailing: _upcomingJobs.isNotEmpty
-          ? GestureDetector(
-              onTap: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const MyApplicationsScreen()),
-                );
-                _loadDashboardData();
-              },
-              child: Text('Ver todos',
-                style: GoogleFonts.inter(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.w600)),
-            )
-          : null,
+      icon: Icons.calendar_month,
+      title: 'Próximos 7 días',
+      trailing: const Icon(Icons.chevron_right, color: AppColors.navyLight),
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (context) => const MyApplicationsScreen()),
         );
         _loadDashboardData();
       },
-      child: _upcomingJobs.isEmpty
-          ? Text(
-              'No tienes trabajos asignados. ¡Busca trabajos y aplica!',
-              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
-            )
-          : Column(
-              children: _upcomingJobs.take(3).map((app) {
-                final job = app['jobs'] as Map<String, dynamic>;
-                final scheduledDate = job['scheduled_date'] as String?;
-                final scheduledTime = job['scheduled_time'] as String?;
-                final barrio = job['barrio'] as String?;
-                final locationAddress = job['location_address'] as String?;
-                final location = barrio ?? locationAddress;
-                final poster = job['profiles'] as Map<String, dynamic>?;
-                final seekerName = poster?['name'] as String? ?? 'Usuario';
+      child: Column(
+        children: [
+          // Day headers row
+          Row(
+            children: next7Days.map((date) {
+              final isToday = date == today;
+              final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+              final hasJobs = jobsByDate.containsKey(dateStr);
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(job['title'] as String,
-                              style: GoogleFonts.nunito(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.navyDark)),
-                            const SizedBox(height: 4),
-                            // Date and time row
-                            if (scheduledDate != null)
-                              Row(
-                                children: [
-                                  const Icon(Icons.calendar_today, size: 13, color: AppColors.textMuted),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatJobDate(scheduledDate, scheduledTime),
-                                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
-                                  ),
-                                ],
-                              )
-                            else
-                              Row(
-                                children: [
-                                  Icon(Icons.schedule, size: 13, color: AppColors.orange.withValues(alpha: 0.7)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Fecha por acordar',
-                                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.orange),
-                                  ),
-                                ],
-                              ),
-                            // Seeker name row
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                const Icon(Icons.person_outline, size: 13, color: AppColors.textMuted),
-                                const SizedBox(width: 4),
-                                Text(
-                                  seekerName,
-                                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
-                                ),
-                                if (location != null) ...[
-                                  const SizedBox(width: 12),
-                                  const Icon(Icons.location_on, size: 13, color: AppColors.textMuted),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      location,
-                                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
+              return Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      _getSpanishDayAbbrev(date.weekday),
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: isToday ? AppColors.orange : AppColors.navyDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: hasJobs
+                            ? AppColors.orange
+                            : isToday
+                                ? AppColors.navyVeryLight
+                                : AppColors.background,
+                        shape: BoxShape.circle,
+                        border: isToday && !hasJobs
+                            ? Border.all(color: AppColors.orange, width: 2)
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${date.day}',
+                          style: GoogleFonts.nunito(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: hasJobs
+                                ? Colors.white
+                                : isToday
+                                    ? AppColors.orange
+                                    : AppColors.textMuted,
+                          ),
                         ),
                       ),
-                      const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+
+          // Job details section
+          if (jobsNext7Days.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Text(
+                'No tienes trabajos asignados esta semana',
+                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+              ),
+            )
+          else ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: AppColors.divider),
+            // List all jobs for the next 7 days with full details
+            ...next7Days.map((date) {
+              final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+              final dayJobs = jobsByDate[dateStr] ?? [];
+              if (dayJobs.isEmpty) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 8),
+                    child: Text(
+                      _formatJobDate(dateStr, null),
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.navyDark,
+                      ),
+                    ),
+                  ),
+                  ...dayJobs.map((app) => _buildHelperCalendarJobRow(app)),
+                ],
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Calendar job row for helper dashboard - shows job title, time, seeker name, and location
+  Widget _buildHelperCalendarJobRow(Map<String, dynamic> app) {
+    final job = app['jobs'] as Map<String, dynamic>;
+    final title = job['title'] as String? ?? 'Sin título';
+    final scheduledTime = job['scheduled_time'] as String?;
+    final barrio = job['barrio'] as String?;
+    final locationAddress = job['location_address'] as String?;
+    final location = barrio ?? locationAddress;
+    final poster = job['profiles'] as Map<String, dynamic>?;
+    final seekerName = poster?['name'] as String? ?? 'Usuario';
+
+    return InkWell(
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => JobDetailScreen(jobId: job['id']),
+          ),
+        );
+        _loadDashboardData();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.navyVeryLight.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            // Time badge
+            Container(
+              width: 50,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              decoration: BoxDecoration(
+                color: AppColors.orange,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                scheduledTime != null ? scheduledTime.substring(0, 5) : '--:--',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Job details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.nunito(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.navyDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 13, color: AppColors.success),
+                      const SizedBox(width: 4),
+                      Text(
+                        seekerName,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (location != null) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.location_on, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            location,
+                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+          ],
+        ),
+      ),
     );
   }
 

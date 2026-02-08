@@ -4,8 +4,10 @@
 
 A hyper-local help exchange platform for Alicante, Spain. Neighbors connect to help each other with tasks — painting, gardening, cleaning, moving furniture, etc. Think Wallapop meets TaskRabbit, but for your barrio.
 
-**Domain:** mimanitas.me  
+**Domain:** mimanitas.me
 **Live landing page:** https://mimanitas.me
+
+**Master project index:** `g:\My Drive\MyProjects\CLAUDE.md` — for cross-project context, shared design tokens, and Paul's workflow rules.
 
 ## The Core Principle
 
@@ -266,11 +268,16 @@ mimanitas/
     functions/        # Edge functions if needed
 ```
 
-## Current Status
+## Current Status (Updated: 2026-02-08)
 
+**Landing page:** DONE and deployed at mimanitas.me
+**Flutter app:** Feature-complete, functional, ready for GUI polish
+**Current work:** GUI alignment — making the Flutter app match the landing page's polished look
+
+### What's Done:
 - ✅ Name chosen: Mi Manitas
 - ✅ Domain registered: mimanitas.me
-- ✅ Landing page live on Vercel
+- ✅ Landing page live on Vercel (professional design, navy/orange/gold)
 - ✅ Flutter app scaffold
 - ✅ Supabase project setup
 - ✅ Auth flow (login, signup, Google OAuth)
@@ -303,14 +310,18 @@ mimanitas/
 - ✅ Helper dashboard on home screen (availability, jobs, upcoming, preferences, payments)
 - ✅ Browse jobs date format includes day-of-week (e.g., "Lun, 15 feb")
 - ✅ Schedule-based job filtering in browse jobs (calendar icon toggle)
-- ⏳ Email notifications via Resend (RESEND_API_KEY not yet configured)
-- ⏳ SMS notifications not yet tested end-to-end (no helper has opted in yet)
 - ✅ WhatsApp message templates created + submitted for Meta approval
 - ✅ Job assignment notifications (SMS works, WhatsApp pending template creation)
 - ✅ Schedule proposals in messaging (seeker/helper can propose dates for flexible jobs)
 - ✅ Schedule conflict prevention (helpers can't be double-booked)
 - ✅ Contact banner in job applications (pulsing, navigates to chat)
-- ⏳ WhatsApp job reminders (send reminder X hours before scheduled job — infrastructure ready, needs template + scheduler)
+- ✅ Mobile check-in feature (GPS-verified time tracking for helpers)
+
+### What's Next (Priority Order):
+1. **GUI alignment** — Restyle Flutter app to match landing page (see GUI Alignment Plan below)
+2. Email notifications via Resend (RESEND_API_KEY not yet configured)
+3. WhatsApp job reminders (infrastructure ready, needs template + scheduler)
+4. SMS end-to-end testing (no helper has opted in yet)
 
 ## Schedule Proposals (Feb 2026)
 
@@ -335,6 +346,53 @@ mimanitas/
 
 ### Files Modified:
 - `app/lib/screens/messages/chat_screen.dart` — Added proposal UI, accept/decline handling, job update
+
+## Mobile Check-in Feature (Feb 2026)
+
+**Goal:** Allow helpers to record their arrival and departure at job sites using GPS verification. Mobile-only feature — web users see a message to use the app.
+
+### How It Works:
+1. Helper is assigned to a job and navigates to job detail screen on mobile
+2. "Control de tiempo" section appears with check-in button
+3. Helper taps "Registrar entrada" when they arrive
+4. App gets GPS location and verifies they're within 200m of job location
+5. If verified, records check-in time + coordinates, changes job status to `in_progress`
+6. Helper taps "Registrar salida" when work is complete
+7. App records check-out time + coordinates
+8. Work duration is calculated and displayed
+
+### Database:
+- **Migration:** `supabase/migrations/20260207000000_check_in_tracking.sql`
+- Added to `jobs` table:
+  - `checked_in_at` TIMESTAMPTZ — When helper checked in
+  - `checked_out_at` TIMESTAMPTZ — When helper checked out
+  - `check_in_lat`, `check_in_lng` DOUBLE PRECISION — GPS at check-in
+  - `check_out_lat`, `check_out_lng` DOUBLE PRECISION — GPS at check-out
+
+### New Files:
+- `app/lib/services/check_in_service.dart` — CheckInService with GPS location, distance calculation, check-in/out methods
+
+### Modified Files:
+- `app/lib/screens/jobs/job_detail_screen.dart` — Added `_buildCheckInSection()` widget with platform detection
+- `app/pubspec.yaml` — Added `geolocator: ^11.0.0` for GPS
+
+### Platform Detection:
+```dart
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+if (kIsWeb) {
+  // Show "Usa la app móvil" message
+} else {
+  // Show check-in/out buttons
+}
+```
+
+### Key Details:
+- **Distance threshold:** 200 meters from job location to allow check-in
+- **GPS accuracy:** Uses `LocationAccuracy.high`
+- **Status flow:** assigned → (check-in) → in_progress → (check-out, job still in_progress) → (seeker marks complete) → completed
+- **Web fallback:** Shows info banner telling user to use mobile app
+- **Error handling:** Graceful failures with Spanish error messages
 
 ## Payment System (Jan 2026)
 

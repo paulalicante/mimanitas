@@ -58,6 +58,9 @@ dependencies:
   # Typography matching landing page (Nunito + Inter)
   google_fonts: ^6.1.0
 
+  # GPS location for mobile check-in feature
+  geolocator: ^11.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

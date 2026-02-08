@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
+import '../../services/check_in_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../utils/schedule_conflict.dart';
 import '../auth/phone_verification_screen.dart';
@@ -29,6 +31,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Map<String, int> _travelTimes = {};
   bool _isLoadingTravelTime = false;
 
+  // Check-in tracking (mobile only)
+  bool _isHelperAssigned = false;
+  bool _isCheckingIn = false;
+  bool _isCheckingOut = false;
+  String? _checkedInAt;
+  String? _checkedOutAt;
+
   @override
   void initState() {
     super.initState();
@@ -50,16 +59,23 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             profiles!jobs_poster_id_fkey(id, name, phone)
           ''').eq('id', widget.jobId).single();
 
-      // Check if current user has already applied
+      // Check if current user has already applied and if they're assigned
       if (user != null) {
         final applications = await supabase
             .from('applications')
-            .select('id')
+            .select('id, status')
             .eq('job_id', widget.jobId)
             .eq('applicant_id', user.id);
 
+        final hasApplied = applications.isNotEmpty;
+        final isAssigned = applications.isNotEmpty &&
+            applications.any((app) => app['status'] == 'accepted');
+
         setState(() {
-          _hasApplied = applications.isNotEmpty;
+          _hasApplied = hasApplied;
+          _isHelperAssigned = isAssigned;
+          _checkedInAt = jobData['checked_in_at'] as String?;
+          _checkedOutAt = jobData['checked_out_at'] as String?;
         });
       }
 
@@ -544,6 +560,320 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  Future<void> _handleCheckIn() async {
+    setState(() => _isCheckingIn = true);
+
+    final result = await CheckInService.checkIn(widget.jobId);
+
+    setState(() => _isCheckingIn = false);
+
+    if (!mounted) return;
+
+    if (result.success) {
+      setState(() {
+        _checkedInAt = DateTime.now().toUtc().toIso8601String();
+        _job?['status'] = 'in_progress';
+      });
+      _dataChanged = true;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.distanceMeters != null
+                ? 'Entrada registrada (a ${result.distanceMeters!.round()}m del trabajo)'
+                : 'Entrada registrada',
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error ?? 'Error al registrar entrada'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleCheckOut() async {
+    setState(() => _isCheckingOut = true);
+
+    final result = await CheckInService.checkOut(widget.jobId);
+
+    setState(() => _isCheckingOut = false);
+
+    if (!mounted) return;
+
+    if (result.success) {
+      setState(() {
+        _checkedOutAt = DateTime.now().toUtc().toIso8601String();
+      });
+      _dataChanged = true;
+
+      final duration = CheckInService.calculateWorkDuration(_checkedInAt, _checkedOutAt);
+      final durationStr = duration != null ? CheckInService.formatDuration(duration) : '';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            durationStr.isNotEmpty
+                ? 'Salida registrada. Tiempo trabajado: $durationStr'
+                : 'Salida registrada',
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error ?? 'Error al registrar salida'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Widget _buildCheckInSection() {
+    final jobStatus = _job?['status'] as String?;
+    final isAssignedOrInProgress = jobStatus == 'assigned' || jobStatus == 'in_progress';
+
+    if (!_isHelperAssigned || !isAssignedOrInProgress) {
+      return const SizedBox.shrink();
+    }
+
+    // Calculate work duration if checked in
+    Duration? workDuration;
+    if (_checkedInAt != null) {
+      workDuration = CheckInService.calculateWorkDuration(_checkedInAt, _checkedOutAt);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _checkedInAt != null && _checkedOutAt == null
+            ? AppColors.successLight
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: _checkedInAt != null && _checkedOutAt == null
+            ? Border.all(color: AppColors.success, width: 2)
+            : null,
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.navyShadow,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _checkedInAt != null ? Icons.access_time_filled : Icons.access_time,
+                color: _checkedInAt != null && _checkedOutAt == null
+                    ? AppColors.success
+                    : AppColors.navyDark,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Control de tiempo',
+                style: GoogleFonts.nunito(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: _checkedInAt != null && _checkedOutAt == null
+                      ? AppColors.success
+                      : AppColors.navyDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Status display
+          if (_checkedInAt != null) ...[
+            _buildTimeRow(
+              'Entrada:',
+              _formatCheckTime(_checkedInAt!),
+              AppColors.success,
+            ),
+            if (_checkedOutAt != null) ...[
+              const SizedBox(height: 8),
+              _buildTimeRow(
+                'Salida:',
+                _formatCheckTime(_checkedOutAt!),
+                AppColors.orange,
+              ),
+            ],
+            if (workDuration != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.goldLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.timer, size: 18, color: AppColors.gold),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Tiempo: ${CheckInService.formatDuration(workDuration)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.navyDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+
+          const SizedBox(height: 16),
+
+          // Check-in/out buttons
+          if (kIsWeb) ...[
+            // Web: show message to use mobile app
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.infoLight,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.infoBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.smartphone, color: AppColors.info, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Usa la app movil para registrar entrada y salida',
+                      style: TextStyle(
+                        color: AppColors.info,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // Mobile: show check-in/out buttons
+            if (_checkedInAt == null) ...[
+              // Not checked in yet - show check-in button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isCheckingIn ? null : _handleCheckIn,
+                  icon: _isCheckingIn
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.login),
+                  label: Text(_isCheckingIn ? 'Registrando...' : 'Registrar entrada'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ] else if (_checkedOutAt == null) ...[
+              // Checked in but not out - show check-out button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isCheckingOut ? null : _handleCheckOut,
+                  icon: _isCheckingOut
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.logout),
+                  label: Text(_isCheckingOut ? 'Registrando...' : 'Registrar salida'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ] else ...[
+              // Completed - show completion message
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                    SizedBox(width: 12),
+                    Text(
+                      'Tiempo registrado correctamente',
+                      style: TextStyle(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeRow(String label, String time, Color color) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          time,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatCheckTime(String isoTime) {
+    try {
+      final dt = DateTime.parse(isoTime).toLocal();
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return isoTime;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -972,6 +1302,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ],
                 ),
               ),
+
+              // Check-in section (for assigned helpers)
+              if (_isHelperAssigned) ...[
+                const SizedBox(height: 16),
+                _buildCheckInSection(),
+              ],
+
               const SizedBox(height: 32),
 
               // Apply button (only for helpers who haven't applied and don't own the job)
