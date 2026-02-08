@@ -4,6 +4,7 @@ import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/payment_service.dart';
 import '../../utils/schedule_conflict.dart';
+import '../messages/chat_screen.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String jobId;
@@ -21,15 +22,34 @@ class JobApplicationsScreen extends StatefulWidget {
   State<JobApplicationsScreen> createState() => _JobApplicationsScreenState();
 }
 
-class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
+class _JobApplicationsScreenState extends State<JobApplicationsScreen>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _applications = [];
   bool _isLoading = true;
   Map<String, dynamic>? _jobScheduleInfo;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadApplications();
+
+    // Soft pulsing animation for contact banner
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadApplications() async {
@@ -68,6 +88,62 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar las aplicaciones: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _navigateToChat(String helperId, String helperName) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // Check if conversation already exists
+      final existingConv = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('job_id', widget.jobId)
+          .eq('seeker_id', user.id)
+          .eq('helper_id', helperId)
+          .maybeSingle();
+
+      String conversationId;
+
+      if (existingConv != null) {
+        conversationId = existingConv['id'];
+      } else {
+        // Create new conversation
+        final newConv = await supabase
+            .from('conversations')
+            .insert({
+              'job_id': widget.jobId,
+              'seeker_id': user.id,
+              'helper_id': helperId,
+            })
+            .select('id')
+            .single();
+        conversationId = newConv['id'];
+      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            conversationId: conversationId,
+            otherUserName: helperName,
+            jobTitle: widget.jobTitle,
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error opening conversation: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir conversación: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -926,32 +1002,56 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
                                     ],
 
                                     // Contact info for accepted applications
-                                    if (status == 'accepted' && helperPhone != null) ...[
+                                    if (status == 'accepted') ...[
                                       const SizedBox(height: 16),
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.orangeLight,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.phone,
-                                              color: AppColors.orange,
-                                              size: 20,
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              'Contacta con $helperName para coordinar',
-                                              style: const TextStyle(
-                                                color: AppColors.orange,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
+                                      AnimatedBuilder(
+                                        animation: _pulseAnimation,
+                                        builder: (context, child) {
+                                          return InkWell(
+                                            onTap: () => _navigateToChat(helperId, helperName),
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.orangeLight.withValues(
+                                                  alpha: 0.5 + (_pulseAnimation.value * 0.5),
+                                                ),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: AppColors.orange.withValues(
+                                                    alpha: _pulseAnimation.value,
+                                                  ),
+                                                  width: 1.5,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.message,
+                                                    color: AppColors.orange,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      'Contacta con $helperName para coordinar',
+                                                      style: const TextStyle(
+                                                        color: AppColors.orange,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const Icon(
+                                                    Icons.chevron_right,
+                                                    color: AppColors.orange,
+                                                    size: 20,
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ],

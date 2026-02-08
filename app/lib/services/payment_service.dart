@@ -310,10 +310,11 @@ class PaymentService {
         paymentStatus: data['payment_status'] as String?,
       );
     } catch (e) {
-      debugPrint('Error verifying checkout: $e');
+      // Don't log as error - this is expected during polling while user is paying
+      // debugPrint('Checkout not yet complete: $e');
       return PaymentConfirmResult(
         success: false,
-        error: 'Error al verificar pago: $e',
+        error: 'Pago no completado aún',
       );
     }
   }

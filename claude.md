@@ -308,6 +308,9 @@ mimanitas/
 - ✅ WhatsApp message templates created + submitted for Meta approval
 - ✅ Job assignment notifications (SMS works, WhatsApp pending template creation)
 - ✅ Schedule proposals in messaging (seeker/helper can propose dates for flexible jobs)
+- ✅ Schedule conflict prevention (helpers can't be double-booked)
+- ✅ Contact banner in job applications (pulsing, navigates to chat)
+- ⏳ WhatsApp job reminders (send reminder X hours before scheduled job — infrastructure ready, needs template + scheduler)
 
 ## Schedule Proposals (Feb 2026)
 
@@ -790,6 +793,91 @@ When logged in as a helper, the home screen shows 5 dashboard cards instead of t
 - Create a shared theme first, then apply to all screens
 - Keep all existing functionality intact — visual upgrade only
 - Test on both helper and seeker views
+
+## Future Expansion Vision (Feb 2026)
+
+**Context:** As the Mi Manitas calendar and messaging features matured, a bigger vision emerged: expanding into a calendar-based appointment platform for recurring home services.
+
+### Two-Product Strategy
+
+**Mi Manitas (this app)** — stays focused on its original mission:
+- Hyper-local, occasional help exchange
+- One-off tasks: painting, gardening, moving, cleaning
+- Helper availability calendar for finding work
+- Pure matchmaking (bulletin board model)
+
+**Future calendar app** (separate project) — expands the vision:
+- Calendar becomes the daily-driver interface
+- Appointment-based recurring services: nails, massage, tutoring, personal training
+- Users book recurring slots (e.g., "nails every 2 weeks, massage monthly")
+- Service providers manage their full schedule in one place
+- External calendar sync (Google Calendar, Apple Calendar)
+- Recurring appointment reminders via WhatsApp
+
+### Shared Infrastructure
+
+Both apps can share the same backend:
+- Supabase project (auth, database, realtime)
+- Stripe Connect (payments)
+- Twilio (SMS, WhatsApp)
+- Google Maps APIs (location services)
+
+This means the investment in Mi Manitas infrastructure pays forward into the expanded product.
+
+### Why Two Apps
+
+1. **Focus** — Mi Manitas has a clear value proposition ("neighbors helping neighbors"). Adding salon bookings would dilute the brand.
+2. **Different users** — Occasional task seekers ≠ people booking regular appointments.
+3. **Launch simplicity** — Mi Manitas can launch focused while the expanded vision develops.
+4. **Patient capital** — No rush. Can wait for Mi Manitas to prove itself before investing in expansion.
+
+### Future Calendar App Features (Parked Ideas)
+
+- Full external calendar sync (OAuth to Google/Apple Calendar)
+- Recurring appointment scheduling
+- Service provider availability management
+- WhatsApp appointment reminders (already have integration!)
+- Calendar as the primary interface (not a job board)
+- Multi-provider booking (nails + massage in one view)
+
+### For Now
+
+Mi Manitas stays focused. "Add to Calendar" buttons per job are sufficient for the current use case. Full calendar sync and recurring appointments are parked for the future expansion.
+
+## WhatsApp Job Reminders (Near-term)
+
+**Goal:** Send WhatsApp reminders to both helper and seeker before a scheduled job.
+
+### What We Already Have:
+- Twilio WhatsApp Business sender (active, working)
+- WhatsApp template system (know how to create/submit templates)
+- Job scheduling data (scheduled_date, scheduled_time in jobs table)
+- Notification preferences (users can opt in/out of WhatsApp)
+
+### What We Need:
+1. **New WhatsApp template** (e.g., `mimanitas_recordatorio`):
+   - `Recordatorio: Tu trabajo "{{1}}" es mañana a las {{2}}. {{3}}`
+   - Variables: job title, time, helper/seeker name
+   - Submit via Twilio Content Template Builder
+
+2. **Scheduled Edge Function** (`send-job-reminders`):
+   - Runs daily (or hourly) via Supabase pg_cron or external cron
+   - Finds jobs scheduled for tomorrow (or in X hours)
+   - Checks notification preferences
+   - Sends WhatsApp to opted-in helpers and seekers
+
+3. **Reminder tracking**:
+   - Add `reminder_sent_at` column to jobs table
+   - Prevent duplicate reminders
+
+### Implementation Options:
+- **pg_cron** (Supabase Pro feature): Schedule SQL that calls Edge Function
+- **External cron**: Use cron-job.org or similar to hit the Edge Function URL
+- **Supabase Database Webhooks**: Won't work for scheduled sends (only triggers on row changes)
+
+### Cost:
+- WhatsApp template messages: ~$0.02-0.05 per message (utility category)
+- At Mi Manitas scale (~50 users): negligible
 
 ## Notes for Claude
 

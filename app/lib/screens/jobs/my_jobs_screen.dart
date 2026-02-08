@@ -112,6 +112,19 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         return isActive;
       }).toList();
     }
+    if (_filterStatus == 'open') {
+      // Only open jobs that are NOT past-due
+      return _jobs.where((job) {
+        final status = job['status'] as String;
+        return status == 'open' && !_isJobPastDue(job);
+      }).toList();
+    }
+    if (_filterStatus == 'assigned') {
+      return _jobs.where((job) {
+        final status = job['status'] as String;
+        return status == 'assigned' || status == 'in_progress';
+      }).toList();
+    }
     if (_filterStatus == 'archived') {
       // Past-due open jobs that haven't been assigned yet
       return _jobs.where((job) {
@@ -135,8 +148,46 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
     }).length;
   }
 
+  int get _openCount {
+    return _jobs.where((job) {
+      final status = job['status'] as String;
+      return status == 'open' && !_isJobPastDue(job);
+    }).length;
+  }
+
+  int get _assignedCount {
+    return _jobs.where((job) {
+      final status = job['status'] as String;
+      return status == 'assigned' || status == 'in_progress';
+    }).length;
+  }
+
+  String _getEmptyMessage() {
+    switch (_filterStatus) {
+      case 'active':
+        return 'No tienes trabajos activos';
+      case 'open':
+        return 'No tienes trabajos abiertos';
+      case 'assigned':
+        return 'No tienes trabajos asignados';
+      case 'archived':
+        return 'No tienes trabajos archivados';
+      case 'completed':
+        return 'No tienes trabajos completados';
+      default:
+        return 'No tienes trabajos';
+    }
+  }
+
   Future<void> _deleteJob(String jobId) async {
     try {
+      // Delete related applications first (foreign key constraint)
+      await supabase.from('applications').delete().eq('job_id', jobId);
+
+      // Delete related conversations
+      await supabase.from('conversations').delete().eq('job_id', jobId);
+
+      // Now delete the job
       await supabase.from('jobs').delete().eq('id', jobId);
 
       if (mounted) {
@@ -149,6 +200,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         _loadMyJobs(); // Reload list
       }
     } catch (e) {
+      print('Error deleting job: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -672,6 +724,20 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                               }).length,
                             ),
                             const SizedBox(width: 8),
+                            _buildFilterChip(
+                              'Abiertos',
+                              'open',
+                              _openCount,
+                              color: AppColors.info,
+                            ),
+                            const SizedBox(width: 8),
+                            _buildFilterChip(
+                              'Asignados',
+                              'assigned',
+                              _assignedCount,
+                              color: AppColors.orange,
+                            ),
+                            const SizedBox(width: 8),
                             if (_archivedCount > 0) ...[
                               _buildFilterChip(
                                 'Archivados',
@@ -699,9 +765,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                       child: _filteredJobs.isEmpty
                           ? Center(
                               child: Text(
-                                _filterStatus == 'active'
-                                    ? 'No tienes trabajos activos'
-                                    : 'No tienes trabajos completados',
+                                _getEmptyMessage(),
                                 style: GoogleFonts.inter(fontSize: 16, color: AppColors.textMuted),
                               ),
                             )
@@ -1049,18 +1113,21 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
                                       icon: const Icon(Icons.edit, size: 18),
                                       label: const Text('Editar'),
                                     ),
-                                    const SizedBox(width: 8),
-                                    TextButton.icon(
-                                      onPressed: () => _confirmDelete(
-                                        job['id'],
-                                        job['title'],
+                                    // Only show delete for open jobs (not assigned/completed)
+                                    if (jobStatus == 'open') ...[
+                                      const SizedBox(width: 8),
+                                      TextButton.icon(
+                                        onPressed: () => _confirmDelete(
+                                          job['id'],
+                                          job['title'],
+                                        ),
+                                        icon: const Icon(Icons.delete, size: 18),
+                                        label: const Text('Eliminar'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: AppColors.error,
+                                        ),
                                       ),
-                                      icon: const Icon(Icons.delete, size: 18),
-                                      label: const Text('Eliminar'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppColors.error,
-                                      ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                               ],

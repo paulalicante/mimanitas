@@ -216,6 +216,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
       return;
     }
 
+    // Require either flexible hours or a specific date
+    if (!_isFlexible && _selectedDate == null) {
+      setState(() {
+        _errorMessage = 'Por favor selecciona una fecha o marca "Horario flexible"';
+      });
+      return;
+    }
+
     // Check if profile is complete
     final user = supabase.auth.currentUser;
     if (user == null) return;

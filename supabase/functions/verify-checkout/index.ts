@@ -4,6 +4,61 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
+const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
+const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
+const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
+
+// Send SMS notification
+async function sendSMS(to: string, body: string): Promise<boolean> {
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    console.error('Twilio env vars not set')
+    return false
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
+  const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ To: to, From: TWILIO_PHONE_NUMBER!, Body: body }).toString(),
+  })
+  if (!res.ok) {
+    console.error('Twilio SMS error:', await res.text())
+    return false
+  }
+  return true
+}
+
+// Send WhatsApp notification
+async function sendWhatsApp(to: string, body: string): Promise<boolean> {
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    console.error('Twilio env vars not set')
+    return false
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
+  const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      To: `whatsapp:${to}`,
+      From: `whatsapp:${TWILIO_PHONE_NUMBER!}`,
+      Body: body,
+    }).toString(),
+  })
+  if (!res.ok) {
+    console.error('Twilio WhatsApp error:', await res.text())
+    return false
+  }
+  return true
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -208,6 +263,57 @@ Deno.serve(async (req) => {
         platform_fee_amount: job.price_amount * 0.1,
         held_at: new Date().toISOString(),
       })
+
+    // 6. Notify the helper that they got the job
+    try {
+      // Get helper's profile and notification preferences
+      const { data: helperProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('name, phone, phone_verified')
+        .eq('id', application.applicant_id)
+        .single()
+
+      const { data: helperPref } = await supabaseAdmin
+        .from('notification_preferences')
+        .select('sms_enabled, whatsapp_enabled')
+        .eq('user_id', application.applicant_id)
+        .maybeSingle()
+
+      // Get seeker name
+      const { data: seekerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .single()
+
+      const seekerName = seekerProfile?.name || 'El cliente'
+      const jobTitle = job.title || 'el trabajo'
+      const priceText = job.price_type === 'hourly'
+        ? `${job.price_amount}€/hora`
+        : `${job.price_amount}€`
+
+      const message = `🎉 ¡Enhorabuena! ${seekerName} te ha contratado para "${jobTitle}" (${priceText}). Abre la app para ver los detalles y contactar.`
+
+      const helperPhone = helperProfile?.phone as string | null
+      const phoneVerified = helperProfile?.phone_verified === true
+
+      if (helperPhone && phoneVerified) {
+        // Send SMS if enabled
+        if (helperPref?.sms_enabled) {
+          await sendSMS(helperPhone, message)
+          console.log('Job assignment SMS sent to helper')
+        }
+
+        // Send WhatsApp if enabled (using plain text, no template needed for outbound)
+        if (helperPref?.whatsapp_enabled) {
+          await sendWhatsApp(helperPhone, message)
+          console.log('Job assignment WhatsApp sent to helper')
+        }
+      }
+    } catch (notifyError) {
+      // Don't fail the whole request if notification fails
+      console.error('Error sending job assignment notification:', notifyError)
+    }
 
     return new Response(
       JSON.stringify({
