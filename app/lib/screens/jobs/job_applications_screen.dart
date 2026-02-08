@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/payment_service.dart';
+import '../../utils/schedule_conflict.dart';
 
 class JobApplicationsScreen extends StatefulWidget {
   final String jobId;
@@ -23,6 +24,7 @@ class JobApplicationsScreen extends StatefulWidget {
 class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   List<Map<String, dynamic>> _applications = [];
   bool _isLoading = true;
+  Map<String, dynamic>? _jobScheduleInfo;
 
   @override
   void initState() {
@@ -36,6 +38,13 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
     });
 
     try {
+      // Load job scheduling info
+      final jobData = await supabase
+          .from('jobs')
+          .select('scheduled_date, scheduled_time, is_flexible, estimated_duration_minutes')
+          .eq('id', widget.jobId)
+          .single();
+
       final applications = await supabase
           .from('applications')
           .select('''
@@ -46,6 +55,7 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
           .order('created_at', ascending: false);
 
       setState(() {
+        _jobScheduleInfo = jobData;
         _applications = List<Map<String, dynamic>>.from(applications);
         _isLoading = false;
       });
@@ -71,6 +81,37 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
       print('DEBUG: Application ID: $applicationId');
       print('DEBUG: Helper ID: $helperId');
       print('DEBUG: Job ID: ${widget.jobId}');
+
+      // Check for scheduling conflict before proceeding
+      final scheduledDate = _jobScheduleInfo?['scheduled_date'] as String?;
+      final scheduledTime = _jobScheduleInfo?['scheduled_time'] as String?;
+      final isFlexible = _jobScheduleInfo?['is_flexible'] == true;
+      final duration = (_jobScheduleInfo?['estimated_duration_minutes'] as int?) ?? 60;
+
+      if (scheduledDate != null && !isFlexible) {
+        final conflictResult = await ScheduleConflict.checkConflict(
+          helperId: helperId,
+          proposedDate: scheduledDate,
+          proposedTime: scheduledTime,
+          durationMinutes: duration,
+          excludeJobId: widget.jobId,
+        );
+
+        if (conflictResult.hasConflict) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Este helper ya tiene otro trabajo a esa hora: ${conflictResult.conflictingJob?['title'] ?? 'trabajo existente'}',
+                ),
+                backgroundColor: AppColors.error,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        }
+      }
 
       // Show loading
       showDialog(
@@ -167,7 +208,72 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
   Future<void> _showPaymentVerificationDialog(String sessionId, String applicationId) async {
     if (!mounted) return;
 
-    // Show auto-verifying dialog
+    // Show dialog asking user to confirm when they've paid
+    final shouldVerify = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.payment, color: AppColors.orange),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Completa el pago')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Se ha abierto Stripe en tu navegador.',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Completa el pago allí y luego pulsa "Ya he pagado" para verificar.',
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.infoLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: AppColors.info, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Si cerraste el navegador, pulsa "Cancelar" e inténtalo de nuevo.',
+                      style: TextStyle(fontSize: 13, color: AppColors.info),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.check),
+            label: const Text('Ya he pagado'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldVerify != true || !mounted) {
+      await _loadApplications();
+      return;
+    }
+
+    // Now show verifying dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -181,11 +287,6 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
               'Verificando pago...',
               style: TextStyle(fontSize: 16),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Esto puede tardar unos segundos.',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-            ),
           ],
         ),
       ),
@@ -193,9 +294,8 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen> {
 
     // Poll for payment completion (webhook may need a moment to process)
     PaymentConfirmResult? verifyResult;
-    for (int attempt = 0; attempt < 8; attempt++) {
-      // Wait before each attempt (3s intervals, first attempt after 2s)
-      await Future.delayed(Duration(seconds: attempt == 0 ? 2 : 3));
+    for (int attempt = 0; attempt < 6; attempt++) {
+      await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
 
       verifyResult = await paymentService.verifyCheckout(sessionId: sessionId);

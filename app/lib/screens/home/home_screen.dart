@@ -47,6 +47,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _profileLocation;
   HelperBalance? _balance;
 
+  // Dashboard data (seekers)
+  bool _seekerDashboardLoading = true;
+  List<Map<String, dynamic>> _seekerJobs = [];
+  List<Map<String, dynamic>> _assignedJobsNext7Days = [];
+  List<Map<String, dynamic>> _openJobsWithApplications = [];
+  List<Map<String, dynamic>> _openJobsNoApplications = [];
+
   @override
   void initState() {
     super.initState();
@@ -180,6 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
           jobNotificationService.setUserContext(user.id, _userType!);
           if (_userType == 'helper') {
             _loadDashboardData();
+          } else if (_userType == 'seeker') {
+            _loadSeekerDashboardData();
           }
         }
 
@@ -378,6 +387,96 @@ class _HomeScreenState extends State<HomeScreen> {
       return await paymentService.getHelperBalance();
     } catch (e) {
       return null;
+    }
+  }
+
+  // --- Seeker Dashboard Data Loading ---
+
+  Future<void> _loadSeekerDashboardData() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    setState(() => _seekerDashboardLoading = true);
+
+    try {
+      // Load all seeker's jobs with their applications and helper profiles
+      final jobsData = await supabase
+          .from('jobs')
+          .select('''
+            *,
+            applications(id, status, applicant_id, profiles!applications_applicant_id_fkey(id, name))
+          ''')
+          .eq('poster_id', userId)
+          .order('created_at', ascending: false);
+
+      _seekerJobs = List<Map<String, dynamic>>.from(jobsData);
+
+      // Calculate date range for next 7 days
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final weekFromNow = today.add(const Duration(days: 7));
+
+      // Categorize jobs
+      _assignedJobsNext7Days = [];
+      _openJobsWithApplications = [];
+      _openJobsNoApplications = [];
+
+      for (final job in _seekerJobs) {
+        final status = job['status'] as String?;
+        final applications = job['applications'] as List? ?? [];
+        final pendingApps = applications.where((a) => a['status'] == 'pending').toList();
+
+        if (status == 'assigned' || status == 'in_progress') {
+          // Check if scheduled within next 7 days
+          final scheduledDate = job['scheduled_date'] as String?;
+          if (scheduledDate != null) {
+            try {
+              final jobDate = DateTime.parse(scheduledDate);
+              if (!jobDate.isBefore(today) && jobDate.isBefore(weekFromNow)) {
+                _assignedJobsNext7Days.add(job);
+              }
+            } catch (_) {}
+          } else {
+            // Flexible jobs with no date - include them
+            _assignedJobsNext7Days.add(job);
+          }
+        } else if (status == 'open') {
+          // Check if job is not past-due
+          final scheduledDate = job['scheduled_date'] as String?;
+          bool isPastDue = false;
+          if (scheduledDate != null) {
+            try {
+              final jobDate = DateTime.parse(scheduledDate);
+              isPastDue = jobDate.isBefore(today);
+            } catch (_) {}
+          }
+
+          if (!isPastDue) {
+            if (pendingApps.isNotEmpty) {
+              _openJobsWithApplications.add(job);
+            } else {
+              _openJobsNoApplications.add(job);
+            }
+          }
+        }
+      }
+
+      // Sort assigned jobs by date
+      _assignedJobsNext7Days.sort((a, b) {
+        final dateA = a['scheduled_date'] as String?;
+        final dateB = b['scheduled_date'] as String?;
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+        return dateA.compareTo(dateB);
+      });
+
+    } catch (e) {
+      print('Error loading seeker dashboard: $e');
+    }
+
+    if (mounted) {
+      setState(() => _seekerDashboardLoading = false);
     }
   }
 
@@ -681,11 +780,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Helper sees dashboard; seekers see marketing content
+            // Both helpers and seekers now see dashboards
             if (_userType == 'helper') ...[
               _buildHelperDashboard(),
             ] else ...[
-              _buildSeekerHomePage(),
+              _buildSeekerDashboard(),
             ],
 
             // Footer
@@ -774,12 +873,35 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Seeker Home Page (Marketing) ---
+  // --- Seeker Dashboard ---
 
-  Widget _buildSeekerHomePage() {
+  Widget _buildSeekerDashboard() {
+    if (_seekerDashboardLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(48),
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Build the 7-day calendar data
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final next7Days = List.generate(7, (i) => today.add(Duration(days: i)));
+
+    // Group assigned jobs by date
+    final jobsByDate = <String, List<Map<String, dynamic>>>{};
+    for (final job in _assignedJobsNext7Days) {
+      final dateStr = job['scheduled_date'] as String?;
+      if (dateStr != null) {
+        jobsByDate.putIfAbsent(dateStr, () => []).add(job);
+      }
+    }
+
     return Column(
       children: [
-        // Navy Hero Section
+        // Navy Header with greeting
         Container(
           width: double.infinity,
           decoration: const BoxDecoration(
@@ -789,594 +911,454 @@ class _HomeScreenState extends State<HomeScreen> {
               colors: [AppColors.navyDark, AppColors.navyDarker],
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 700),
               child: Column(
                 children: [
-                  // Hero headline
                   Text(
-                    'Tu comunidad de',
-                    style: GoogleFonts.nunito(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkTextPrimary,
-                      height: 1.15,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'ayuda ',
-                        style: GoogleFonts.nunito(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.darkTextPrimary,
-                          height: 1.15,
-                        ),
-                      ),
-                      Text(
-                        'local',
-                        style: GoogleFonts.nunito(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.gold,
-                          height: 1.15,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Encuentra ayuda de confianza cerca de ti o comparte tu tiempo cuando estés libre. Pago seguro, sin agencias, sin comisiones ocultas.',
-                    style: GoogleFonts.inter(
-                      fontSize: 17,
-                      color: AppColors.darkTextSecondary,
-                      height: 1.6,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  // Hero CTA
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PostJobScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add_circle_outline, size: 20),
-                        const SizedBox(width: 8),
-                        Text('Publicar un trabajo', style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        )),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Gold "Gratis" badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.gold,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.gold.withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          '⭐ Gratis para todos ⭐',
-                          style: GoogleFonts.nunito(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.navyDarker,
-                          ),
-                        ),
-                        Text(
-                          'hasta 31 julio 2026',
-                          style: GoogleFonts.nunito(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.navyDarker.withOpacity(0.85),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Gold Stats Strip
-        Container(
-          width: double.infinity,
-          color: AppColors.gold,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: Wrap(
-                spacing: 32,
-                runSpacing: 16,
-                alignment: WrapAlignment.center,
-                children: [
-                  _buildStatItem('🚀', 'Lanzamiento Q2 2026'),
-                  _buildStatItem('📍', 'Empezamos en Alicante'),
-                  _buildStatItem('🔒', 'Pago 100% seguro'),
-                  _buildStatItem('💰', 'Sin comisiones ocultas'),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // "No Greedy Rabbit" Section
-        Container(
-          width: double.infinity,
-          color: AppColors.navyDark,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                children: [
-                  // Rabbit image placeholder (emoji for now)
-                  Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: AppColors.darkOverlay,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text('🐰', style: TextStyle(fontSize: 64)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'El ayudante cobra el 100%.',
-                    style: GoogleFonts.nunito(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkTextPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    'Siempre.',
-                    style: GoogleFonts.nunito(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Otras plataformas se quedan con el 20-30% de cada trabajo. Nosotros no cobramos comisión por transacción.',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      color: AppColors.darkTextSecondary,
-                      height: 1.6,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  // Comparison cards
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0x26DC3232), // red tint
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0x4DDC3232)),
-                          ),
-                          child: Column(
-                            children: [
-                              Text('OTRAS APPS', style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFFE85555),
-                                letterSpacing: 0.5,
-                              )),
-                              const SizedBox(height: 4),
-                              Text('20-30%', style: GoogleFonts.nunito(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.darkTextPrimary,
-                              )),
-                              Text('comisión', style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.darkTextMuted,
-                              )),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.gold.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            children: [
-                              Text('MI MANITAS', style: GoogleFonts.inter(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.gold,
-                                letterSpacing: 0.5,
-                              )),
-                              const SizedBox(height: 4),
-                              Text('0%', style: GoogleFonts.nunito(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.darkTextPrimary,
-                              )),
-                              Text('para siempre*', style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: AppColors.darkTextMuted,
-                              )),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '*Los buscadores de ayuda pagarán una pequeña cuota mensual. Los ayudantes siempre gratis.',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.darkTextMuted,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // How It Works Section
-        Container(
-          width: double.infinity,
-          color: AppColors.background,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: Column(
-                children: [
-                  Text(
-                    'Cómo funciona',
+                    '¡Hola, ${_userName ?? ""}!',
                     style: GoogleFonts.nunito(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.navyDark,
+                      color: AppColors.darkTextPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tres pasos sencillos para conseguir ayuda',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Wrap(
-                    spacing: 24,
-                    runSpacing: 24,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildStep('1', 'Publica', 'Describe lo que necesitas y pon tu precio o tarifa por hora.'),
-                      _buildStep('2', 'Conecta', 'Recibe solicitudes de manitas verificados de tu zona.'),
-                      _buildStep('3', 'Paga seguro', 'El dinero se guarda en depósito hasta que el trabajo esté hecho.'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Features Grid
-        Container(
-          width: double.infinity,
-          color: AppColors.surface,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: Column(
-                children: [
-                  Text(
-                    'Características',
-                    style: GoogleFonts.nunito(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.navyDark,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 20,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildFeatureCard('🔒', 'Pago en depósito', 'El dinero está seguro hasta que confirmes que el trabajo está bien.'),
-                      _buildFeatureCard('📅', 'Calendario', 'Los manitas muestran cuándo están libres.'),
-                      _buildFeatureCard('💬', 'Mensajería', 'Chat directo con los candidatos.'),
-                      _buildFeatureCard('📱', 'Verificación', 'Todos los usuarios verificados por teléfono.'),
-                      _buildFeatureCard('📍', '100% local', 'Hecho para tu barrio, no un marketplace global.'),
-                      _buildFeatureCard('💰', 'Precios claros', 'Tú pones el precio. Sin sorpresas.'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Trust Section
-        Container(
-          width: double.infinity,
-          color: AppColors.background,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: Column(
-                children: [
-                  Text(
-                    'Confianza garantizada',
-                    style: GoogleFonts.nunito(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.navyDark,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Wrap(
-                    spacing: 20,
-                    runSpacing: 20,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildTrustItem('🔐', 'Depósito seguro', 'Stripe protege tu dinero'),
-                      _buildTrustItem('✓', 'Usuarios verificados', 'Teléfono confirmado'),
-                      _buildTrustItem('⚖️', 'Cumplimiento legal', 'GDPR y normativa española'),
-                      _buildTrustItem('⭐', 'Reseñas reales', 'De transacciones completadas'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Final CTA Section
-        Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.navyDark, AppColors.navyDarker],
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: Column(
-                children: [
-                  Text(
-                    '¿Listo para empezar?',
-                    style: GoogleFonts.nunito(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Publica tu primer trabajo gratis y encuentra ayuda en tu barrio.',
+                    'Gestiona tus trabajos',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       color: AppColors.darkTextSecondary,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const PostJobScreen(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-                        ),
-                        child: Text('Publicar trabajo', style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        )),
-                      ),
-                      const SizedBox(width: 16),
-                      OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const MyJobsScreen(),
-                            ),
-                          );
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-                          side: BorderSide(color: AppColors.darkTextMuted),
-                          foregroundColor: AppColors.darkTextPrimary,
-                        ),
-                        child: Text('Ver mis trabajos', style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        )),
-                      ),
-                    ],
                   ),
                 ],
               ),
             ),
           ),
         ),
+
+        // Dashboard Cards
+        Container(
+          constraints: const BoxConstraints(maxWidth: 900),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 7-Day Calendar Card - Expanded with job details
+              _buildDashboardCard(
+                icon: Icons.calendar_month,
+                title: 'Próximos 7 días',
+                trailing: const Icon(Icons.chevron_right, color: AppColors.navyLight),
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const MyJobsScreen()),
+                  );
+                  _loadSeekerDashboardData();
+                },
+                child: Column(
+                  children: [
+                    // Day headers row
+                    Row(
+                      children: next7Days.map((date) {
+                        final isToday = date == today;
+                        final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                        final hasJobs = jobsByDate.containsKey(dateStr);
+
+                        return Expanded(
+                          child: Column(
+                            children: [
+                              Text(
+                                _getSpanishDayAbbrev(date.weekday),
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: isToday ? AppColors.orange : AppColors.navyDark,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: hasJobs
+                                      ? AppColors.orange
+                                      : isToday
+                                          ? AppColors.navyVeryLight
+                                          : AppColors.background,
+                                  shape: BoxShape.circle,
+                                  border: isToday && !hasJobs
+                                      ? Border.all(color: AppColors.orange, width: 2)
+                                      : null,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${date.day}',
+                                    style: GoogleFonts.nunito(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: hasJobs
+                                          ? Colors.white
+                                          : isToday
+                                              ? AppColors.orange
+                                              : AppColors.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    // Job details section
+                    if (_assignedJobsNext7Days.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Text(
+                          'No tienes trabajos asignados esta semana',
+                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                        ),
+                      )
+                    else ...[
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, color: AppColors.divider),
+                      // List all jobs for the next 7 days with full details
+                      ...next7Days.map((date) {
+                        final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                        final dayJobs = jobsByDate[dateStr] ?? [];
+                        if (dayJobs.isEmpty) return const SizedBox.shrink();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12, bottom: 8),
+                              child: Text(
+                                _formatJobDate(dateStr, null),
+                                style: GoogleFonts.nunito(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: AppColors.navyDark,
+                                ),
+                              ),
+                            ),
+                            ...dayJobs.map((job) => _buildSeekerCalendarJobRow(job)),
+                          ],
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Open jobs with pending applications
+              if (_openJobsWithApplications.isNotEmpty) ...[
+                _buildDashboardCard(
+                  icon: Icons.pending_actions,
+                  title: 'Solicitudes pendientes',
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_openJobsWithApplications.length}',
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    children: _openJobsWithApplications.take(3).map((job) {
+                      final applications = job['applications'] as List? ?? [];
+                      final pendingCount = applications.where((a) => a['status'] == 'pending').length;
+
+                      return _buildSeekerJobRow(
+                        job: job,
+                        subtitle: '$pendingCount ${pendingCount == 1 ? 'solicitud' : 'solicitudes'} pendiente${pendingCount == 1 ? '' : 's'}',
+                        subtitleColor: AppColors.orange,
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Other open jobs (no applications)
+              if (_openJobsNoApplications.isNotEmpty) ...[
+                _buildDashboardCard(
+                  icon: Icons.work_outline,
+                  title: 'Trabajos abiertos',
+                  trailing: Text(
+                    '${_openJobsNoApplications.length}',
+                    style: GoogleFonts.nunito(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  child: Column(
+                    children: _openJobsNoApplications.take(3).map((job) {
+                      return _buildSeekerJobRow(
+                        job: job,
+                        subtitle: 'Sin solicitudes aún',
+                        subtitleColor: AppColors.textMuted,
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Empty state - no jobs at all
+              if (_seekerJobs.isEmpty) ...[
+                _buildDashboardCard(
+                  icon: Icons.add_circle_outline,
+                  title: 'Publica tu primer trabajo',
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const PostJobScreen()),
+                    );
+                    _loadSeekerDashboardData();
+                  },
+                  child: Text(
+                    'Describe lo que necesitas y encuentra ayuda cerca de ti.',
+                    style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Quick actions
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const PostJobScreen()),
+                        );
+                        _loadSeekerDashboardData();
+                      },
+                      icon: const Icon(Icons.add, size: 20),
+                      label: Text('Nuevo trabajo', style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
+                      )),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const MyJobsScreen()),
+                        );
+                        _loadSeekerDashboardData();
+                      },
+                      icon: const Icon(Icons.list_alt, size: 20),
+                      label: Text('Ver todos', style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w700,
+                      )),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.navyLight),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildStatItem(String icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 6),
-        Text(text, style: GoogleFonts.nunito(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: AppColors.navyDarker,
-        )),
-      ],
-    );
+  String _getSpanishDayAbbrev(int weekday) {
+    const days = ['', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    return days[weekday];
   }
 
-  Widget _buildFeatureCard(String icon, String title, String description) {
-    return Container(
-      width: 270,
-      padding: const EdgeInsets.all(24),
-      decoration: AppDecorations.card(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.orangeLight,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
+  Widget _buildSeekerJobRow({
+    required Map<String, dynamic> job,
+    required String subtitle,
+    required Color subtitleColor,
+  }) {
+    final title = job['title'] as String? ?? 'Sin título';
+    final scheduledDate = job['scheduled_date'] as String?;
+    final scheduledTime = job['scheduled_time'] as String?;
+    final isFlexible = job['is_flexible'] == true;
+
+    return InkWell(
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => JobDetailScreen(jobId: job['id']),
           ),
-          const SizedBox(height: 16),
-          Text(title, style: GoogleFonts.nunito(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: AppColors.navyDark,
-          )),
-          const SizedBox(height: 6),
-          Text(description, style: GoogleFonts.inter(
-            fontSize: 14,
-            color: AppColors.textMuted,
-            height: 1.5,
-          )),
-        ],
+        );
+        _loadSeekerDashboardData();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.nunito(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: AppColors.navyDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (scheduledDate != null) ...[
+                        const Icon(Icons.calendar_today, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatJobDate(scheduledDate, scheduledTime),
+                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
+                        ),
+                        const SizedBox(width: 12),
+                      ] else if (isFlexible) ...[
+                        const Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Flexible',
+                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: subtitleColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTrustItem(String icon, String title, String subtitle) {
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(24),
-      decoration: AppDecorations.card(),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              color: AppColors.navyVeryLight,
-              shape: BoxShape.circle,
-            ),
-            child: Center(child: Text(icon, style: const TextStyle(fontSize: 28))),
-          ),
-          const SizedBox(height: 12),
-          Text(title, style: GoogleFonts.nunito(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppColors.navyDark,
-          ), textAlign: TextAlign.center),
-          const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.inter(
-            fontSize: 13,
-            color: AppColors.textMuted,
-          ), textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
+  /// Calendar job row for seeker dashboard - shows job title, time, and helper name
+  Widget _buildSeekerCalendarJobRow(Map<String, dynamic> job) {
+    final title = job['title'] as String? ?? 'Sin título';
+    final scheduledTime = job['scheduled_time'] as String?;
+    final applications = job['applications'] as List? ?? [];
 
-  Widget _buildStep(String number, String title, String description) {
-    return Container(
-      width: 260,
-      padding: const EdgeInsets.all(28),
-      decoration: AppDecorations.card(),
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.orange,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(number, style: GoogleFonts.nunito(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              )),
-            ),
+    // Find the accepted application to get helper name
+    String? helperName;
+    for (final app in applications) {
+      if (app['status'] == 'accepted') {
+        final profile = app['profiles'] as Map<String, dynamic>?;
+        helperName = profile?['name'] as String?;
+        break;
+      }
+    }
+
+    return InkWell(
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => JobDetailScreen(jobId: job['id']),
           ),
-          const SizedBox(height: 16),
-          Text(title, style: GoogleFonts.nunito(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: AppColors.navyDark,
-          )),
-          const SizedBox(height: 8),
-          Text(description, style: GoogleFonts.inter(
-            fontSize: 14,
-            color: AppColors.textMuted,
-            height: 1.5,
-          ), textAlign: TextAlign.center),
-        ],
+        );
+        _loadSeekerDashboardData();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.navyVeryLight.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            // Time badge
+            Container(
+              width: 50,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              decoration: BoxDecoration(
+                color: AppColors.orange,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                scheduledTime != null ? scheduledTime.substring(0, 5) : '--:--',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Job details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.nunito(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppColors.navyDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (helperName != null) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 13, color: AppColors.success),
+                        const SizedBox(width: 4),
+                        Text(
+                          helperName,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+          ],
+        ),
       ),
     );
   }
@@ -1442,12 +1424,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildAvailabilityCard(),
               const SizedBox(height: 16),
+              _buildAssignedJobsCard(),
+              const SizedBox(height: 16),
               _buildJobsOverviewCard(),
               const SizedBox(height: 16),
-              if (_upcomingJobs.isNotEmpty) ...[
-                _buildUpcomingJobsCard(),
-                const SizedBox(height: 16),
-              ],
               _buildPreferencesSummaryCard(),
               const SizedBox(height: 16),
               _buildPaymentsSummaryCard(),
@@ -1637,97 +1617,111 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildUpcomingJobsCard() {
+  Widget _buildAssignedJobsCard() {
     return _buildDashboardCard(
       icon: Icons.assignment_turned_in,
-      title: 'Proximos trabajos',
-      trailing: GestureDetector(
-        onTap: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const MyApplicationsScreen()),
-          );
-          _loadDashboardData();
-        },
-        child: Text('Ver todos',
-          style: GoogleFonts.inter(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.w600)),
-      ),
-      child: Column(
-        children: _upcomingJobs.take(3).map((app) {
-          final job = app['jobs'] as Map<String, dynamic>;
-          final scheduledDate = job['scheduled_date'] as String?;
-          final scheduledTime = job['scheduled_time'] as String?;
-          final barrio = job['barrio'] as String?;
-          final locationAddress = job['location_address'] as String?;
-          final location = barrio ?? locationAddress;
+      title: 'Trabajos asignados',
+      trailing: _upcomingJobs.isNotEmpty
+          ? GestureDetector(
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const MyApplicationsScreen()),
+                );
+                _loadDashboardData();
+              },
+              child: Text('Ver todos',
+                style: GoogleFonts.inter(color: AppColors.orange, fontSize: 13, fontWeight: FontWeight.w600)),
+            )
+          : null,
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const MyApplicationsScreen()),
+        );
+        _loadDashboardData();
+      },
+      child: _upcomingJobs.isEmpty
+          ? Text(
+              'No tienes trabajos asignados. ¡Busca trabajos y aplica!',
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
+            )
+          : Column(
+              children: _upcomingJobs.take(3).map((app) {
+                final job = app['jobs'] as Map<String, dynamic>;
+                final scheduledDate = job['scheduled_date'] as String?;
+                final scheduledTime = job['scheduled_time'] as String?;
+                final barrio = job['barrio'] as String?;
+                final locationAddress = job['location_address'] as String?;
+                final location = barrio ?? locationAddress;
+                final poster = job['profiles'] as Map<String, dynamic>?;
+                final seekerName = poster?['name'] as String? ?? 'Usuario';
 
-          return InkWell(
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => JobDetailScreen(jobId: job['id']),
-                ),
-              );
-              _loadDashboardData();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(job['title'] as String,
-                          style: GoogleFonts.nunito(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.navyDark)),
-                        const SizedBox(height: 4),
-                        // Date and time row
-                        if (scheduledDate != null)
-                          Row(
-                            children: [
-                              const Icon(Icons.calendar_today, size: 13, color: AppColors.textMuted),
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatJobDate(scheduledDate, scheduledTime),
-                                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(job['title'] as String,
+                              style: GoogleFonts.nunito(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.navyDark)),
+                            const SizedBox(height: 4),
+                            // Date and time row
+                            if (scheduledDate != null)
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today, size: 13, color: AppColors.textMuted),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _formatJobDate(scheduledDate, scheduledTime),
+                                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                                  ),
+                                ],
+                              )
+                            else
+                              Row(
+                                children: [
+                                  Icon(Icons.schedule, size: 13, color: AppColors.orange.withValues(alpha: 0.7)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Fecha por acordar',
+                                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.orange),
+                                  ),
+                                ],
                               ),
-                              if (scheduledTime != null) ...[
-                                const SizedBox(width: 12),
-                                const Icon(Icons.access_time, size: 13, color: AppColors.textMuted),
+                            // Seeker name row
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                const Icon(Icons.person_outline, size: 13, color: AppColors.textMuted),
                                 const SizedBox(width: 4),
                                 Text(
-                                  scheduledTime.substring(0, 5),
+                                  seekerName,
                                   style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
                                 ),
+                                if (location != null) ...[
+                                  const SizedBox(width: 12),
+                                  const Icon(Icons.location_on, size: 13, color: AppColors.textMuted),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      location,
+                                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                        // Location row
-                        if (location != null) ...[
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, size: 13, color: AppColors.textMuted),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  location,
-                                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
-                ],
-              ),
+                );
+              }).toList(),
             ),
-          );
-        }).toList(),
-      ),
     );
   }
 
@@ -1833,7 +1827,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/geocoding_service.dart';
+import '../../utils/schedule_conflict.dart';
 import '../auth/phone_verification_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
@@ -475,6 +476,35 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     });
 
     try {
+      // Check for scheduling conflict if job has a fixed date/time
+      final scheduledDate = _job?['scheduled_date'] as String?;
+      final scheduledTime = _job?['scheduled_time'] as String?;
+      final isFlexible = _job?['is_flexible'] == true;
+      final duration = (_job?['estimated_duration_minutes'] as int?) ?? 60;
+
+      if (scheduledDate != null && !isFlexible) {
+        final conflictResult = await ScheduleConflict.checkConflict(
+          helperId: user.id,
+          proposedDate: scheduledDate,
+          proposedTime: scheduledTime,
+          durationMinutes: duration,
+        );
+
+        if (conflictResult.hasConflict) {
+          setState(() => _isApplying = false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(conflictResult.message ?? 'Ya tienes un trabajo a esa hora'),
+                backgroundColor: AppColors.error,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          return;
+        }
+      }
+
       // Create application
       await supabase.from('applications').insert({
         'job_id': widget.jobId,

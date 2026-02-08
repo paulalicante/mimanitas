@@ -306,6 +306,32 @@ mimanitas/
 - ⏳ Email notifications via Resend (RESEND_API_KEY not yet configured)
 - ⏳ SMS notifications not yet tested end-to-end (no helper has opted in yet)
 - ✅ WhatsApp message templates created + submitted for Meta approval
+- ✅ Job assignment notifications (SMS works, WhatsApp pending template creation)
+- ✅ Schedule proposals in messaging (seeker/helper can propose dates for flexible jobs)
+
+## Schedule Proposals (Feb 2026)
+
+**Goal:** When a flexible job is assigned, seeker and helper can agree on a specific date/time through messaging.
+
+### How It Works:
+1. For flexible jobs (no scheduled date), a 📅 calendar button appears in the chat input
+2. Either party taps it and picks a date + time
+3. A special "schedule proposal" message is sent
+4. The other party sees it with "Aceptar" / "Proponer otra" buttons
+5. When accepted:
+   - Job's `scheduled_date` and `scheduled_time` are updated
+   - Job's `is_flexible` is set to `false`
+   - A confirmation message is sent
+   - The calendar button disappears (date already agreed)
+
+### Database:
+- **Migration:** `supabase/migrations/20260208000000_schedule_proposals.sql`
+- Added `message_type` column to messages (default 'text', can be 'schedule_proposal')
+- Added `metadata` JSONB column for proposal details: `{proposed_date, proposed_time, status}`
+- Status: 'pending', 'accepted', or 'declined'
+
+### Files Modified:
+- `app/lib/screens/messages/chat_screen.dart` — Added proposal UI, accept/decline handling, job update
 
 ## Payment System (Jan 2026)
 
@@ -331,7 +357,7 @@ mimanitas/
   - `create-stripe-account` - Creates Stripe Connect Express account for helpers
   - `check-stripe-status` - Checks helper's Stripe account status
   - `create-checkout-session` - Creates Stripe Checkout for seeker payments
-  - `verify-checkout` - Verifies payment completion
+  - `verify-checkout` - Verifies payment completion + sends SMS/WhatsApp notification to helper when assigned
   - `confirm-payment` - Confirms payment and updates job status
   - `handle-stripe-webhooks` - Handles all Stripe webhook events (deployed with `--no-verify-jwt`)
   - `notify-new-job` - Database webhook: notifies helpers when new jobs are posted
@@ -529,14 +555,21 @@ This is infrastructure for trust in a marketplace where people meet in person.
 ### WhatsApp Content Templates:
 - ✅ **mimanitas_nuevo_trabajo** (`HX849428c56adba4605701346d1606fa1b`): `Mi Manitas: Nuevo trabajo "{{1}}" {{2}} — {{3}}. Abre la app para ver detalles.`
 - ✅ **mimanitas_nueva_solicitud** (`HX36e73b51c2a58717bf218c7f1a07f242`): `Mi Manitas: {{1}} ha aplicado a tu trabajo "{{2}}". Abre la app para revisar su solicitud.`
-- Both submitted for Meta approval (category: UTILITY)
-- Template SIDs stored as Supabase secrets: `WA_TEMPLATE_NEW_JOB`, `WA_TEMPLATE_NEW_APPLICATION`
+- ⏳ **mimanitas_trabajo_asignado** (PENDING CREATION): `🎉 ¡Enhorabuena! {{1}} te ha contratado para "{{2}}" ({{3}}). Abre la app para ver los detalles.`
+  - Variables: `{{1}}` = seeker name, `{{2}}` = job title, `{{3}}` = price (e.g., "50€" or "15€/hora")
+  - Category: UTILITY
+  - **To create:** Twilio Console → Messaging → Content Template Builder → Create new
+  - Once approved, set: `supabase secrets set WA_TEMPLATE_JOB_ASSIGNED=HXxxxxxxxxx`
+  - Then update `verify-checkout` to use `ContentSid` + `ContentVariables` instead of `Body`
+- Template SIDs stored as Supabase secrets: `WA_TEMPLATE_NEW_JOB`, `WA_TEMPLATE_NEW_APPLICATION`, `WA_TEMPLATE_JOB_ASSIGNED` (pending)
 - Edge Functions updated to use `ContentSid` + `ContentVariables` instead of raw `Body`
 
 ### What's Next for WhatsApp:
-1. Wait for Meta template approval (can check status in Twilio Console → Content Template Builder)
-2. Test end-to-end once approved
-3. Consider getting a Spanish +34 Twilio number for local trust (~$1-2/month)
+1. **Create job assignment template** (`mimanitas_trabajo_asignado`) in Twilio Console → Content Template Builder
+2. Wait for Meta template approval (can check status in Twilio Console → Content Template Builder)
+3. Once approved, set `WA_TEMPLATE_JOB_ASSIGNED` secret and update `verify-checkout` to use it
+4. Test end-to-end once approved
+5. Consider getting a Spanish +34 Twilio number for local trust (~$1-2/month)
 
 ### Key Details:
 - The WhatsApp sender number is the **Twilio number** (+1 412-419-3947), not a personal number
@@ -595,6 +628,7 @@ These environment variables must be set in Supabase Dashboard → Edge Functions
 | `REQUIRE_PREMIUM_NOTIFICATIONS` | ✅ Set (`false`) | Premium gate for external notifications (flip to `true` to monetize) |
 | `WA_TEMPLATE_NEW_JOB` | ✅ Set | WhatsApp Content Template SID for new job notifications |
 | `WA_TEMPLATE_NEW_APPLICATION` | ✅ Set | WhatsApp Content Template SID for new application notifications |
+| `WA_TEMPLATE_JOB_ASSIGNED` | ⏳ Pending | WhatsApp Content Template SID for job assignment notifications (create template first) |
 
 ## Smart Job Matching (Feb 2026)
 
