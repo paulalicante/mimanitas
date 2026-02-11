@@ -36,7 +36,12 @@ class _TimeSlot {
 }
 
 class AvailabilityScreen extends StatefulWidget {
-  const AvailabilityScreen({super.key});
+  final bool embedded;
+
+  const AvailabilityScreen({
+    super.key,
+    this.embedded = false,
+  });
 
   @override
   State<AvailabilityScreen> createState() => _AvailabilityScreenState();
@@ -187,7 +192,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        Navigator.of(context).pop();
+        // Only pop if not embedded (as a tab screen)
+        if (!widget.embedded) {
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       print('Error saving availability: $e');
@@ -214,6 +222,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         title: const Text(
           'Mi disponibilidad',
         ),
+        automaticallyImplyLeading: !widget.embedded,
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,

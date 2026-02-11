@@ -8,10 +8,12 @@ import '../../services/avatar_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, shows current user's profile
+  final bool embedded;
 
   const ProfileScreen({
     super.key,
     this.userId,
+    this.embedded = false,
   });
 
   @override
@@ -161,6 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text(''),
+          automaticallyImplyLeading: !widget.embedded,
         ),
         body: const Center(
           child: CircularProgressIndicator(),
@@ -172,6 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text(''),
+          automaticallyImplyLeading: !widget.embedded,
         ),
         body: Center(
           child: Column(
@@ -211,6 +215,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(
           _isOwnProfile ? 'Mi perfil' : 'Perfil',
         ),
+        automaticallyImplyLeading: !widget.embedded,
         actions: [
           if (_isOwnProfile)
             IconButton(

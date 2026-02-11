@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_theme.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/home/home_screen.dart';
+import 'widgets/main_scaffold.dart';
 import 'services/message_notification_service.dart';
 import 'services/job_notification_service.dart';
 
@@ -99,7 +99,7 @@ class _AuthGateState extends State<AuthGate> {
         if (session != null) {
           // Initialize notifications when user is logged in
           _initializeNotifications();
-          return const HomeScreen();
+          return const MainScaffold();
         } else {
           // Dispose and reset when logged out
           if (_notificationsInitialized) {

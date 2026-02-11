@@ -8,8 +8,13 @@ import '../auth/phone_verification_screen.dart';
 
 class PostJobScreen extends StatefulWidget {
   final Map<String, dynamic>? jobToEdit;
+  final bool embedded;
 
-  const PostJobScreen({super.key, this.jobToEdit});
+  const PostJobScreen({
+    super.key,
+    this.jobToEdit,
+    this.embedded = false,
+  });
 
   bool get isEditing => jobToEdit != null;
 
@@ -486,13 +491,34 @@ class _PostJobScreenState extends State<PostJobScreen> {
       print('DEBUG: Job inserted successfully');
 
       if (mounted) {
-        Navigator.of(context).pop(true); // Return true to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isEditing ? 'Trabajo actualizado!' : 'Trabajo publicado con exito!'),
             backgroundColor: AppColors.success,
           ),
         );
+
+        if (widget.embedded) {
+          // Reset form when embedded as a tab
+          setState(() {
+            _titleController.clear();
+            _descriptionController.clear();
+            _priceController.clear();
+            _selectedSkill = null;
+            _selectedAddress = null;
+            _selectedLat = null;
+            _selectedLng = null;
+            _selectedBarrio = null;
+            _isFlexible = false;
+            _selectedDate = null;
+            _selectedTime = null;
+            _estimatedDuration = null;
+            _jobRequirements = {};
+            _isLoading = false;
+          });
+        } else {
+          Navigator.of(context).pop(true); // Return true to indicate success
+        }
       }
     } catch (error) {
       print('DEBUG: Error submitting job: $error');
@@ -669,6 +695,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEditing ? 'Editar trabajo' : 'Publicar trabajo'),
+        automaticallyImplyLeading: !widget.embedded,
       ),
       body: SingleChildScrollView(
         child: Center(

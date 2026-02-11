@@ -8,7 +8,12 @@ import '../../main.dart';
 import 'chat_screen.dart';
 
 class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key});
+  final bool embedded;
+
+  const MessagesScreen({
+    super.key,
+    this.embedded = false,
+  });
 
   @override
   State<MessagesScreen> createState() => _MessagesScreenState();
@@ -135,6 +140,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mensajes'),
+        automaticallyImplyLeading: !widget.embedded,
       ),
       body: _isLoading
           ? const Center(

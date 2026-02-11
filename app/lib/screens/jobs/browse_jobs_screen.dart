@@ -5,7 +5,12 @@ import '../../main.dart';
 import 'job_detail_screen.dart';
 
 class BrowseJobsScreen extends StatefulWidget {
-  const BrowseJobsScreen({super.key});
+  final bool embedded;
+
+  const BrowseJobsScreen({
+    super.key,
+    this.embedded = false,
+  });
 
   @override
   State<BrowseJobsScreen> createState() => _BrowseJobsScreenState();
@@ -328,6 +333,7 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
         title: const Text(
           'Trabajos disponibles',
         ),
+        automaticallyImplyLeading: !widget.embedded,
         actions: [
           // Schedule filter toggle (only if helper has availability set)
           if (_hasAvailability)

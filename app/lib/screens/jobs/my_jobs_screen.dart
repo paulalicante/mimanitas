@@ -8,7 +8,12 @@ import '../reviews/submit_review_screen.dart';
 import '../messages/chat_screen.dart';
 
 class MyJobsScreen extends StatefulWidget {
-  const MyJobsScreen({super.key});
+  final bool embedded;
+
+  const MyJobsScreen({
+    super.key,
+    this.embedded = false,
+  });
 
   @override
   State<MyJobsScreen> createState() => _MyJobsScreenState();
@@ -661,6 +666,7 @@ class _MyJobsScreenState extends State<MyJobsScreen> {
         title: const Text(
           'Mis trabajos',
         ),
+        automaticallyImplyLeading: !widget.embedded,
       ),
       body: _isLoading
           ? const Center(
