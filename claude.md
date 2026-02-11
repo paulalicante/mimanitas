@@ -937,6 +937,104 @@ Mi Manitas stays focused. "Add to Calendar" buttons per job are sufficient for t
 - WhatsApp template messages: ~$0.02-0.05 per message (utility category)
 - At Mi Manitas scale (~50 users): negligible
 
+## Service Categories (Planned - Feb 2026)
+
+**Design principle:** Hybrid model - some categories use service menus (standardized), others use bulletin board (flexible). Only ask helpers what seekers actually need to filter/decide.
+
+### 1. LIMPIEZA
+*Model: Service menu (hourly rate + options)*
+
+Helper sets:
+- Tarifa por hora: €___
+- Tipo de limpieza: ☑ Regular ☑ Profunda ☑ Fin de obra
+- Incluyo sin coste extra: ☑ Ventanas ☑ Horno ☑ Nevera ☑ Plancha
+
+Why: Cleaning is standardized enough that seekers want to compare rates and know what's included upfront.
+
+### 2. PINTURA
+*Model: Bulletin board + attributes*
+
+Helper sets:
+- Dónde pinto: ☑ Interior ☑ Exterior
+- Alturas: ○ Solo planta baja ○ Hasta 2 plantas ○ Sin límite
+- Traigo materiales: ○ Sí (incluido en precio) ○ No (cliente aporta)
+
+Why: Height is safety/capability. Materials affects pricing significantly.
+
+### 3. JARDINERÍA
+*Model: Bulletin board + attributes*
+
+Helper sets:
+- Servicios: ☑ Mantenimiento ☑ Poda ☑ Césped ☑ Riego ☑ Diseño
+- Tengo herramientas propias: ○ Sí ○ No
+
+Why: Some gardeners just mow, others do full landscape design.
+
+### 4. MUDANZAS
+*Model: Bulletin board + attributes*
+
+Helper sets:
+- Tengo vehículo: ○ No ○ Coche ○ Furgoneta
+- Puedo cargar muebles pesados: ○ Sí ○ No
+
+Why: Vehicle is critical. Some helpers are just extra hands, others bring transport.
+
+### 5. MONTAJE
+*Model: Bulletin board (simple)*
+
+Helper sets:
+- Experiencia con: ☑ IKEA ☑ Otros muebles ☑ Electrodomésticos
+- Tengo herramientas: ○ Sí ○ No
+
+Why: Pretty standardized, doesn't need much.
+
+### 6. MANITAS
+*Model: Bulletin board (loose)*
+
+Helper sets:
+- Puedo ayudar con: ☑ Fontanería básica ☑ Electricidad básica ☑ Carpintería ☑ Cerrajería ☑ Colgar cosas ☑ Pequeñas reparaciones
+- Descripción libre: [text field]
+
+Why: Too variable to structure tightly. Let helpers describe what they actually do.
+
+### 7. RECADOS
+*Model: Bulletin board (simple)*
+
+Helper sets:
+- Tengo vehículo: ○ No ○ Sí
+- Disponible para: ☑ Compras ☑ Recogidas ☑ Entregas ☑ Acompañamiento
+
+Why: Neighborhood errands - picking up groceries, pharmacy runs, etc.
+
+### 8. OTROS
+*Model: Bulletin board (open)*
+
+Helper sets:
+- Categoría libre: [text field]
+- Descripción: [text field]
+
+Why: Catch-all for things we haven't thought of.
+
+### Category Summary
+
+| Categoría | Modelo | Complejidad |
+|-----------|--------|-------------|
+| Limpieza | Service menu | Medium |
+| Pintura | Bulletin + attrs | Medium |
+| Jardinería | Bulletin + attrs | Low |
+| Mudanzas | Bulletin + attrs | Low |
+| Montaje | Bulletin + attrs | Low |
+| Manitas | Bulletin (loose) | Low |
+| Recados | Bulletin + attrs | Low |
+| Otros | Open | Minimal |
+
+### Implementation Status
+- [ ] Database schema for skill_attributes table
+- [ ] Helper profile skill editing UI
+- [ ] Seeker job posting with category attributes
+- [ ] Browse/filter by attributes
+- [ ] Service menu booking flow for Limpieza
+
 ## Notes for Claude
 
 - Paul is a "vibe coder" — describe what you want, AI writes it
