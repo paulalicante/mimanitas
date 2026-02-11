@@ -5,6 +5,7 @@ import '../../main.dart';
 import '../../widgets/reviews_list.dart';
 import '../../app_theme.dart';
 import '../../services/avatar_service.dart';
+import 'edit_skills_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, shows current user's profile
@@ -205,6 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final phone = _profile!['phone'] as String?;
     final phoneVerified = _profile!['phone_verified'] as bool? ?? false;
     final barrio = _profile!['barrio'] as String?;
+    final userType = _profile!['user_type'] as String?;
     final averageRating = _profile!['average_rating'] != null
         ? (_profile!['average_rating'] as num).toDouble()
         : null;
@@ -486,6 +488,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
 
+                  // Skills section (helpers only, own profile)
+                  if (_isOwnProfile && userType == 'helper') ...[
+                    const SizedBox(height: 28),
+                    Row(
+                      children: [
+                        const Icon(Icons.handyman, size: 22, color: AppColors.navyDark),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Mis habilidades',
+                          style: GoogleFonts.nunito(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.navyDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: AppDecorations.card(),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Configura los servicios que ofreces para recibir trabajos que te interesan',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: AppColors.textMuted,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const EditSkillsScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.settings),
+                            label: const Text('Gestionar habilidades'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // Reviews section
                   if (reviewCount > 0) ...[
                     const SizedBox(height: 28),
@@ -548,6 +601,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
+                  ],
+
+                  // Logout button (only for own profile)
+                  if (_isOwnProfile) ...[
+                    const SizedBox(height: 32),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Cerrar sesión'),
+                            content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                                child: const Text('Cerrar sesión'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await supabase.auth.signOut();
+                        }
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Cerrar sesión'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
                   ],
                 ],
               ),

@@ -9,6 +9,7 @@ import '../jobs/browse_helpers_screen.dart';
 import '../jobs/job_detail_screen.dart';
 import '../jobs/my_applications_screen.dart';
 import '../profile/notification_preferences_screen.dart';
+import '../profile/edit_skills_screen.dart';
 import '../payments/earnings_screen.dart';
 
 /// Home tab content - dashboard for both helpers and seekers
@@ -39,6 +40,7 @@ class _HomeTabState extends State<HomeTab> {
   Map<String, dynamic>? _notificationPrefs;
   Map<String, dynamic>? _profileLocation;
   HelperBalance? _balance;
+  int _helperSkillCount = 0;
 
   // Dashboard data (seekers)
   bool _seekerDashboardLoading = true;
@@ -83,6 +85,7 @@ class _HomeTabState extends State<HomeTab> {
       _loadJobCounts(userId),
       _loadUpcomingJobs(userId),
       _loadBalance(),
+      _loadHelperSkillCount(userId),
     ]);
 
     if (!mounted) return;
@@ -92,8 +95,21 @@ class _HomeTabState extends State<HomeTab> {
       _nearbyJobCount = counts['nearby'] ?? 0;
       _upcomingJobs = phase2[1] as List<Map<String, dynamic>>;
       _balance = phase2[2] as HelperBalance?;
+      _helperSkillCount = phase2[3] as int;
       _dashboardLoading = false;
     });
+  }
+
+  Future<int> _loadHelperSkillCount(String userId) async {
+    try {
+      final data = await supabase
+          .from('user_skills')
+          .select('id')
+          .eq('user_id', userId);
+      return data.length;
+    } catch (e) {
+      return 0;
+    }
   }
 
   Future<List<Map<String, dynamic>>> _loadAvailabilityData(String userId) async {
@@ -351,66 +367,62 @@ class _HomeTabState extends State<HomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Center(
-        child: Column(
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 48,
+        titleSpacing: 16,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header with MiManitas Logo (simplified - no menu buttons)
-            Container(
-              constraints: const BoxConstraints(maxWidth: 900),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: CustomPaint(
-                      painter: MiManitasLogoPainter(),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  RichText(
-                    text: TextSpan(
-                      style: GoogleFonts.nunito(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                      children: const [
-                        TextSpan(text: 'Mi', style: TextStyle(color: AppColors.orange)),
-                        TextSpan(text: 'Manitas', style: TextStyle(color: AppColors.gold)),
-                      ],
-                    ),
-                  ),
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CustomPaint(
+                painter: MiManitasLogoPainter(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            RichText(
+              text: TextSpan(
+                style: GoogleFonts.nunito(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+                children: const [
+                  TextSpan(text: 'Mi', style: TextStyle(color: AppColors.orange)),
+                  TextSpan(text: 'Manitas', style: TextStyle(color: AppColors.gold)),
                 ],
               ),
             ),
-
-            // Dashboard content based on user type
-            if (widget.userType == 'helper')
-              _buildHelperDashboard()
-            else
-              _buildSeekerDashboard(),
-
-            // Footer
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.divider),
-                ),
-              ),
-              child: const Text(
-                'Hecho con 🔧 en Alicante',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
           ],
+        ),
+        centerTitle: false,
+      ),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            children: [
+              // Dashboard content based on user type
+              if (widget.userType == 'helper')
+                _buildHelperDashboard()
+              else
+                _buildSeekerDashboard(),
+
+              // Footer
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: const Text(
+                  'Hecho con 🔧 en Alicante',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -947,6 +959,73 @@ class _HomeTabState extends State<HomeTab> {
             ),
           ),
         ),
+
+        // Skills Setup Prompt (if no skills configured)
+        if (_helperSkillCount == 0)
+          Container(
+            constraints: const BoxConstraints(maxWidth: 900),
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.orange, AppColors.gold],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.orange.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.handyman, size: 48, color: Colors.white),
+                const SizedBox(height: 12),
+                Text(
+                  '¡Configura tus habilidades!',
+                  style: GoogleFonts.nunito(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Selecciona los servicios que ofreces para recibir trabajos que te interesan',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const EditSkillsScreen(),
+                      ),
+                    );
+                    // Reload to update skill count
+                    _loadDashboardData();
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Configurar ahora'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.orange,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
         // Dashboard Cards
         Container(
