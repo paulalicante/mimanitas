@@ -28,6 +28,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String _priceType = 'fixed';
   String? _selectedSkill;
   List<Map<String, dynamic>> _skills = [];
+  Map<String, dynamic> _jobRequirements = {}; // Skill-specific requirements
 
   // Location from Places autocomplete
   String? _selectedAddress;
@@ -81,6 +82,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
     _selectedBarrio = job['barrio'];
     _isFlexible = job['is_flexible'] ?? false;
     _estimatedDuration = job['estimated_duration_minutes'];
+
+    // Parse job requirements
+    final requirements = job['job_requirements'];
+    if (requirements != null && requirements is Map) {
+      _jobRequirements = Map<String, dynamic>.from(requirements);
+    }
 
     // Parse scheduled date/time
     final scheduledDate = job['scheduled_date'] as String?;
@@ -438,6 +445,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
             _isFlexible ? null : _selectedDate?.toIso8601String().split('T')[0],
         'scheduled_time': _isFlexible ? null : _formatTimeForDb(_selectedTime),
         'estimated_duration_minutes': _estimatedDuration,
+        'job_requirements': _jobRequirements.isNotEmpty ? _jobRequirements : null,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
@@ -493,6 +501,167 @@ class _PostJobScreenState extends State<PostJobScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Get the attributes schema for the selected skill
+  Map<String, dynamic>? _getSelectedSkillSchema() {
+    if (_selectedSkill == null) return null;
+    final skill = _skills.firstWhere(
+      (s) => s['id'].toString() == _selectedSkill,
+      orElse: () => {},
+    );
+    return skill['attributes_schema'] as Map<String, dynamic>?;
+  }
+
+  /// Build the requirements section based on the selected skill's attributes
+  Widget _buildRequirementsSection() {
+    final schema = _getSelectedSkillSchema();
+    if (schema == null || schema.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Text(
+          'Requisitos especificos',
+          style: GoogleFonts.nunito(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navyDark,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Opcional: especifica lo que necesitas',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppColors.textMuted,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...schema.entries.map((entry) {
+          return _buildRequirementField(entry.key, entry.value);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildRequirementField(String attrKey, Map<String, dynamic> attrSchema) {
+    final type = attrSchema['type'] as String? ?? 'text';
+    final label = attrSchema['label'] as String? ?? attrKey;
+    final options = attrSchema['options'] as List<dynamic>? ?? [];
+
+    // Skip text fields for job requirements (those are for helpers to describe themselves)
+    if (type == 'text') return const SizedBox.shrink();
+
+    final currentValue = _jobRequirements[attrKey];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (type == 'multi')
+            _buildMultiSelectRequirement(attrKey, options, currentValue)
+          else if (type == 'single')
+            _buildSingleSelectRequirement(attrKey, options, currentValue),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMultiSelectRequirement(
+    String attrKey,
+    List<dynamic> options,
+    dynamic currentValue,
+  ) {
+    final selectedValues = currentValue is List
+        ? List<String>.from(currentValue)
+        : <String>[];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((opt) {
+        final value = opt['value'] as String;
+        final label = opt['label'] as String;
+        final isSelected = selectedValues.contains(value);
+
+        return FilterChip(
+          label: Text(label, style: const TextStyle(fontSize: 13)),
+          selected: isSelected,
+          selectedColor: AppColors.orangeLight,
+          checkmarkColor: AppColors.orange,
+          onSelected: (selected) {
+            setState(() {
+              final newValues = List<String>.from(selectedValues);
+              if (selected) {
+                newValues.add(value);
+              } else {
+                newValues.remove(value);
+              }
+              if (newValues.isEmpty) {
+                _jobRequirements.remove(attrKey);
+              } else {
+                _jobRequirements[attrKey] = newValues;
+              }
+            });
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSingleSelectRequirement(
+    String attrKey,
+    List<dynamic> options,
+    dynamic currentValue,
+  ) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        // Add "No preference" option
+        ChoiceChip(
+          label: const Text('Sin preferencia', style: TextStyle(fontSize: 13)),
+          selected: currentValue == null,
+          selectedColor: AppColors.navyVeryLight,
+          onSelected: (selected) {
+            if (selected) {
+              setState(() => _jobRequirements.remove(attrKey));
+            }
+          },
+        ),
+        ...options.map((opt) {
+          final value = opt['value'] as String;
+          final label = opt['label'] as String;
+          final isSelected = currentValue == value;
+
+          return ChoiceChip(
+            label: Text(label, style: const TextStyle(fontSize: 13)),
+            selected: isSelected,
+            selectedColor: AppColors.orangeLight,
+            onSelected: (selected) {
+              setState(() {
+                if (selected) {
+                  _jobRequirements[attrKey] = value;
+                } else {
+                  _jobRequirements.remove(attrKey);
+                }
+              });
+            },
+          );
+        }),
+      ],
+    );
   }
 
   @override
@@ -596,7 +765,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       );
                     }).toList(),
                     onChanged: (value) {
-                      setState(() => _selectedSkill = value);
+                      setState(() {
+                        _selectedSkill = value;
+                        _jobRequirements = {}; // Clear requirements when skill changes
+                      });
                     },
                     validator: (value) {
                       if (value == null) {
@@ -605,6 +777,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       return null;
                     },
                   ),
+
+                  // Skill-specific requirements (if the selected skill has attributes)
+                  if (_selectedSkill != null) _buildRequirementsSection(),
+
                   const SizedBox(height: 16),
 
                   // Location: saved address chips + autocomplete

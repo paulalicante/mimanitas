@@ -7,6 +7,7 @@ import '../../main.dart';
 import '../jobs/post_job_screen.dart';
 import '../jobs/my_jobs_screen.dart';
 import '../jobs/browse_jobs_screen.dart';
+import '../jobs/browse_helpers_screen.dart';
 import '../jobs/job_detail_screen.dart';
 import '../jobs/my_applications_screen.dart';
 import '../debug/debug_sms_screen.dart';
@@ -15,6 +16,7 @@ import '../messages/messages_screen.dart';
 import '../payments/earnings_screen.dart';
 import '../profile/notification_preferences_screen.dart';
 import '../profile/availability_screen.dart';
+import '../profile/edit_skills_screen.dart';
 import '../../services/message_notification_service.dart';
 import '../../services/job_notification_service.dart';
 import '../../services/payment_service.dart';
@@ -53,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _assignedJobsNext7Days = [];
   List<Map<String, dynamic>> _openJobsWithApplications = [];
   List<Map<String, dynamic>> _openJobsNoApplications = [];
+  List<Map<String, dynamic>> _serviceMenuSkills = []; // Skills with direct booking
 
   @override
   void initState() {
@@ -399,16 +402,25 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _seekerDashboardLoading = true);
 
     try {
-      // Load all seeker's jobs with their applications and helper profiles
-      final jobsData = await supabase
-          .from('jobs')
-          .select('''
-            *,
-            applications(id, status, applicant_id, profiles!applications_applicant_id_fkey(id, name))
-          ''')
-          .eq('poster_id', userId)
-          .order('created_at', ascending: false);
+      // Load jobs and service-menu skills in parallel
+      final results = await Future.wait([
+        supabase
+            .from('jobs')
+            .select('''
+              *,
+              applications(id, status, applicant_id, profiles!applications_applicant_id_fkey(id, name))
+            ''')
+            .eq('poster_id', userId)
+            .order('created_at', ascending: false),
+        supabase
+            .from('skills')
+            .select()
+            .eq('model_type', 'service_menu')
+            .order('name_es'),
+      ]);
 
+      final jobsData = results[0] as List<dynamic>;
+      _serviceMenuSkills = List<Map<String, dynamic>>.from(results[1] as List);
       _seekerJobs = List<Map<String, dynamic>>.from(jobsData);
 
       // Calculate date range for next 7 days
@@ -643,6 +655,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                               break;
+                            case 'edit_skills':
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const EditSkillsScreen(),
+                                ),
+                              );
+                              break;
                             case 'my_applications':
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -716,6 +735,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(Icons.calendar_month, size: 20, color: AppColors.navyDark),
                                   SizedBox(width: 12),
                                   Text('Publicar disponibilidad'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'edit_skills',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.handyman, size: 20, color: AppColors.navyDark),
+                                  SizedBox(width: 12),
+                                  Text('Mis habilidades'),
                                 ],
                               ),
                             ),
@@ -1154,6 +1183,53 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     'Describe lo que necesitas y encuentra ayuda cerca de ti.',
                     style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Service menu categories - browse helpers directly
+              if (_serviceMenuSkills.isNotEmpty) ...[
+                _buildDashboardCard(
+                  icon: Icons.people_outline,
+                  title: 'Buscar ayudantes',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Contacta directamente con ayudantes por categoría',
+                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _serviceMenuSkills.map((skill) {
+                          final icon = skill['icon'] as String? ?? '🔧';
+                          final name = skill['name_es'] as String? ?? skill['name'] as String;
+                          return ActionChip(
+                            avatar: Text(icon, style: const TextStyle(fontSize: 16)),
+                            label: Text(name),
+                            backgroundColor: AppColors.navyVeryLight,
+                            side: BorderSide.none,
+                            labelStyle: GoogleFonts.nunito(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.navyDark,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => BrowseHelpersScreen(
+                                    skillId: skill['id'] as String,
+                                    skillName: name,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 16),

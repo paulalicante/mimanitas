@@ -22,11 +22,16 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
   List<Map<String, dynamic>> _availabilitySlots = [];
   bool _hasAvailability = false; // true if helper has set any availability
 
+  // Skill attributes filter
+  bool _filterBySkillMatch = false;
+  Map<String, Map<String, dynamic>> _helperSkillAttributes = {}; // skill_id -> attributes
+
   @override
   void initState() {
     super.initState();
     _loadSkills();
     _loadAvailability();
+    _loadHelperSkillAttributes();
     _loadJobs();
   }
 
@@ -56,6 +61,65 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
     } catch (e) {
       print('Error loading availability: $e');
     }
+  }
+
+  Future<void> _loadHelperSkillAttributes() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await supabase
+          .from('user_skills')
+          .select('skill_id, skill_attributes')
+          .eq('user_id', user.id);
+      final Map<String, Map<String, dynamic>> attrs = {};
+      for (final us in data) {
+        final skillId = us['skill_id'] as String;
+        final attrData = us['skill_attributes'];
+        attrs[skillId] = attrData is Map ? Map<String, dynamic>.from(attrData) : {};
+      }
+      setState(() {
+        _helperSkillAttributes = attrs;
+      });
+    } catch (e) {
+      print('Error loading helper skill attributes: $e');
+    }
+  }
+
+  /// Check if the helper's skill attributes match the job's requirements
+  bool _jobMatchesHelperSkills(Map<String, dynamic> job) {
+    final jobRequirements = job['job_requirements'];
+    if (jobRequirements == null || jobRequirements is! Map || (jobRequirements as Map).isEmpty) {
+      return true; // No requirements = matches everyone
+    }
+
+    final skillId = job['skill_id'] as String?;
+    if (skillId == null) return true;
+
+    final helperAttrs = _helperSkillAttributes[skillId];
+    if (helperAttrs == null || helperAttrs.isEmpty) {
+      return false; // Helper doesn't have this skill with attributes
+    }
+
+    // Check each requirement
+    for (final entry in (jobRequirements as Map).entries) {
+      final key = entry.key as String;
+      final required = entry.value;
+      final helperValue = helperAttrs[key];
+
+      if (required is List) {
+        // Multi-select: helper must have at least one of the required values
+        if (helperValue is! List) return false;
+        final helperList = List<String>.from(helperValue);
+        final requiredList = List<String>.from(required);
+        final hasMatch = requiredList.any((r) => helperList.contains(r));
+        if (!hasMatch) return false;
+      } else if (required is String) {
+        // Single-select: helper must have this exact value
+        if (helperValue != required) return false;
+      }
+    }
+
+    return true;
   }
 
   Future<void> _loadJobs() async {
@@ -191,10 +255,16 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
     return int.parse(parts[0]) * 60 + int.parse(parts[1]);
   }
 
-  /// Get visible jobs (filtered by schedule if toggle is on)
+  /// Get visible jobs (filtered by schedule and/or skill match if toggles are on)
   List<Map<String, dynamic>> get _visibleJobs {
-    if (!_filterBySchedule || !_hasAvailability) return _jobs;
-    return _jobs.where(_jobMatchesAvailability).toList();
+    var jobs = _jobs;
+    if (_filterBySchedule && _hasAvailability) {
+      jobs = jobs.where(_jobMatchesAvailability).toList();
+    }
+    if (_filterBySkillMatch && _helperSkillAttributes.isNotEmpty) {
+      jobs = jobs.where(_jobMatchesHelperSkills).toList();
+    }
+    return jobs;
   }
 
   /// Count of jobs hidden by the schedule filter
@@ -276,6 +346,26 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
               onPressed: () {
                 setState(() {
                   _filterBySchedule = !_filterBySchedule;
+                });
+              },
+            ),
+          // Skill match filter toggle (only if helper has skill attributes set)
+          if (_helperSkillAttributes.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                _filterBySkillMatch
+                    ? Icons.check_circle
+                    : Icons.check_circle_outline,
+                color: _filterBySkillMatch
+                    ? AppColors.gold
+                    : Colors.white70,
+              ),
+              tooltip: _filterBySkillMatch
+                  ? 'Mostrando solo trabajos que coinciden'
+                  : 'Filtrar por mis habilidades',
+              onPressed: () {
+                setState(() {
+                  _filterBySkillMatch = !_filterBySkillMatch;
                 });
               },
             ),
@@ -466,6 +556,15 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                   final applicationStatus =
                                       job['application_status'] as String?;
 
+                                  // Check if job has requirements and if helper matches
+                                  final jobRequirements = job['job_requirements'];
+                                  final hasRequirements = jobRequirements != null &&
+                                      jobRequirements is Map &&
+                                      (jobRequirements as Map).isNotEmpty;
+                                  final matchesSkills = hasRequirements
+                                      ? _jobMatchesHelperSkills(job)
+                                      : true;
+
                                   return Card(
                                     margin: const EdgeInsets.only(bottom: 16),
                                     shape: RoundedRectangleBorder(
@@ -607,6 +706,47 @@ class _BrowseJobsScreenState extends State<BrowseJobsScreen> {
                                                             fontSize: 13,
                                                             fontWeight:
                                                                 FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                                // Skill requirements match indicator
+                                                if (hasRequirements && !hasApplied) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: matchesSkills
+                                                          ? AppColors.successLight
+                                                          : AppColors.warningLight,
+                                                      borderRadius: BorderRadius.circular(8),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          matchesSkills
+                                                              ? Icons.check
+                                                              : Icons.info_outline,
+                                                          size: 12,
+                                                          color: matchesSkills
+                                                              ? AppColors.success
+                                                              : AppColors.warning,
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          matchesSkills ? 'Coincide' : 'Requisitos',
+                                                          style: TextStyle(
+                                                            color: matchesSkills
+                                                                ? AppColors.success
+                                                                : AppColors.warning,
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.w600,
                                                           ),
                                                         ),
                                                       ],
