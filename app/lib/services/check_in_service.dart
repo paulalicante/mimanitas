@@ -103,7 +103,7 @@ class CheckInService {
       // Get job details to verify location
       final job = await supabase
           .from('jobs')
-          .select('id, lat, lng, location_address, status, checked_in_at')
+          .select('id, location_lat, location_lng, location_address, status, checked_in_at')
           .eq('id', jobId)
           .single();
 
@@ -121,8 +121,8 @@ class CheckInService {
 
       // Verify distance from job location (if job has coordinates)
       double? distance;
-      final jobLat = job['lat'] as double?;
-      final jobLng = job['lng'] as double?;
+      final jobLat = job['location_lat'] as double?;
+      final jobLng = job['location_lng'] as double?;
 
       if (jobLat != null && jobLng != null) {
         distance = calculateDistance(
@@ -174,7 +174,7 @@ class CheckInService {
       // Get job details
       final job = await supabase
           .from('jobs')
-          .select('id, status, checked_in_at, checked_out_at')
+          .select('id, status, checked_in_at, checked_out_at, checkin_approved_at')
           .eq('id', jobId)
           .single();
 
@@ -188,6 +188,13 @@ class CheckInService {
       // Check if checked in
       if (job['checked_in_at'] == null) {
         return CheckInResult.failure('Primero debes registrar entrada.');
+      }
+
+      // Check if arrival was approved by seeker
+      if (job['checkin_approved_at'] == null) {
+        return CheckInResult.failure(
+          'El cliente aún no ha confirmado tu llegada. Espera su confirmación.',
+        );
       }
 
       // Check if already checked out

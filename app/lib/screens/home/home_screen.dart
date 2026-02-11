@@ -804,6 +804,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
+
+            // Temporary visible logout button
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await supabase.auth.signOut();
+                  },
+                  icon: const Icon(Icons.logout, color: AppColors.error),
+                  label: const Text(
+                    'Cerrar sesión',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.error),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

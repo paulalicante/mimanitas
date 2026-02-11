@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app_theme.dart';
 import '../../main.dart';
 import '../../services/check_in_service.dart';
@@ -38,10 +39,50 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   String? _checkedInAt;
   String? _checkedOutAt;
 
+  // Seeker approval of check-in
+  String? _checkinApprovedAt;
+  bool _isApprovingCheckin = false;
+
+  // Seeker approval of checkout (releases payment)
+  String? _checkoutApprovedAt;
+  bool _isApprovingCheckout = false;
+
+  // Real-time subscription for live updates
+  RealtimeChannel? _jobChannel;
+
   @override
   void initState() {
     super.initState();
     _loadJobDetails();
+    _subscribeToJobUpdates();
+  }
+
+  @override
+  void dispose() {
+    _jobChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  void _subscribeToJobUpdates() {
+    _jobChannel = supabase
+        .channel('job_${widget.jobId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'jobs',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: widget.jobId,
+          ),
+          callback: (payload) {
+            // Job was updated - reload details
+            if (mounted) {
+              _loadJobDetails();
+            }
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _loadJobDetails() async {
@@ -56,8 +97,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       final jobData = await supabase.from('jobs').select('''
             *,
             skills(name_es, icon),
-            profiles!jobs_poster_id_fkey(id, name, phone)
+            profiles!jobs_poster_id_fkey(id, name, phone, avatar_url)
           ''').eq('id', widget.jobId).single();
+
+      // Always load check-in data from job (for both helpers and seekers)
+      _checkedInAt = jobData['checked_in_at'] as String?;
+      _checkedOutAt = jobData['checked_out_at'] as String?;
+      _checkinApprovedAt = jobData['checkin_approved_at'] as String?;
+      _checkoutApprovedAt = jobData['checkout_approved_at'] as String?;
 
       // Check if current user has already applied and if they're assigned
       if (user != null) {
@@ -74,8 +121,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         setState(() {
           _hasApplied = hasApplied;
           _isHelperAssigned = isAssigned;
-          _checkedInAt = jobData['checked_in_at'] as String?;
-          _checkedOutAt = jobData['checked_out_at'] as String?;
         });
       }
 
@@ -874,6 +919,345 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  // Seeker approves helper check-in
+  Future<void> _handleApproveCheckin() async {
+    setState(() => _isApprovingCheckin = true);
+
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+
+      await supabase.from('jobs').update({
+        'checkin_approved_at': DateTime.now().toUtc().toIso8601String(),
+        'checkin_approved_by': user.id,
+      }).eq('id', widget.jobId);
+
+      setState(() {
+        _checkinApprovedAt = DateTime.now().toUtc().toIso8601String();
+        _dataChanged = true;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Llegada confirmada'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isApprovingCheckin = false);
+    }
+  }
+
+  // Widget for seeker to approve helper's check-in
+  Widget _buildSeekerApprovalSection() {
+    final user = supabase.auth.currentUser;
+    final poster = _job?['profiles'];
+    final isOwnJob = user != null && poster != null && poster['id'] == user.id;
+    final jobStatus = _job?['status'] as String?;
+
+    // Only show for job owner when helper has checked in
+    if (!isOwnJob || _checkedInAt == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Don't show for completed jobs
+    if (jobStatus == 'completed') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _checkinApprovedAt != null ? AppColors.successLight : AppColors.goldLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _checkinApprovedAt != null ? AppColors.success : AppColors.gold,
+          width: 2,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.navyShadow,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _checkinApprovedAt != null ? Icons.verified : Icons.person_pin_circle,
+                color: _checkinApprovedAt != null ? AppColors.success : AppColors.gold,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _checkinApprovedAt != null
+                      ? 'Llegada confirmada'
+                      : 'El ayudante ha llegado',
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _checkinApprovedAt != null ? AppColors.success : AppColors.navyDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Show check-in time
+          _buildTimeRow(
+            'Registró entrada a las:',
+            _formatCheckTime(_checkedInAt!),
+            AppColors.navyDark,
+          ),
+
+          if (_checkinApprovedAt == null) ...[
+            const SizedBox(height: 16),
+            const Text(
+              '¿Confirmas que el ayudante está presente?',
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isApprovingCheckin ? null : _handleApproveCheckin,
+                icon: _isApprovingCheckin
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.check_circle),
+                label: Text(_isApprovingCheckin ? 'Confirmando...' : 'Confirmar llegada'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.success,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 8),
+            _buildTimeRow(
+              'Confirmado a las:',
+              _formatCheckTime(_checkinApprovedAt!),
+              AppColors.success,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Seeker approves helper checkout and releases payment
+  Future<void> _handleApproveCheckout() async {
+    setState(() => _isApprovingCheckout = true);
+
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+
+      // Update job: approve checkout, mark complete, release payment
+      await supabase.from('jobs').update({
+        'checkout_approved_at': DateTime.now().toUtc().toIso8601String(),
+        'checkout_approved_by': user.id,
+        'status': 'completed',
+        'payment_status': 'released',
+      }).eq('id', widget.jobId);
+
+      // Also update the transaction to released
+      await supabase.from('transactions').update({
+        'status': 'released',
+      }).eq('job_id', widget.jobId);
+
+      setState(() {
+        _checkoutApprovedAt = DateTime.now().toUtc().toIso8601String();
+        _dataChanged = true;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Trabajo completado. Pago liberado al ayudante.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isApprovingCheckout = false);
+    }
+  }
+
+  // Widget for seeker to approve helper's checkout and release payment
+  Widget _buildSeekerCheckoutApprovalSection() {
+    final user = supabase.auth.currentUser;
+    final poster = _job?['profiles'];
+    final isOwnJob = user != null && poster != null && poster['id'] == user.id;
+    final jobStatus = _job?['status'] as String?;
+
+    // Only show for job owner when helper has checked out but not yet approved
+    if (!isOwnJob || _checkedOutAt == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Don't show if already approved (job completed)
+    if (jobStatus == 'completed' || _checkoutApprovedAt != null) {
+      return const SizedBox.shrink();
+    }
+
+    // Calculate work duration
+    Duration? workDuration;
+    if (_checkedInAt != null && _checkedOutAt != null) {
+      workDuration = CheckInService.calculateWorkDuration(_checkedInAt, _checkedOutAt);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.orangeLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.orange, width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.navyShadow,
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.task_alt,
+                color: AppColors.orange,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'El ayudante ha terminado',
+                  style: GoogleFonts.nunito(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.navyDark,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Show work times
+          _buildTimeRow(
+            'Entrada:',
+            _formatCheckTime(_checkedInAt!),
+            AppColors.success,
+          ),
+          const SizedBox(height: 4),
+          _buildTimeRow(
+            'Salida:',
+            _formatCheckTime(_checkedOutAt!),
+            AppColors.orange,
+          ),
+
+          if (workDuration != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.goldLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.timer, size: 18, color: AppColors.gold),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Tiempo trabajado: ${CheckInService.formatDuration(workDuration)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navyDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+          const Text(
+            '¿Confirmas que el trabajo está completo? Al confirmar, el pago se liberará al ayudante.',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isApprovingCheckout ? null : _handleApproveCheckout,
+              icon: _isApprovingCheckout
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.payment),
+              label: Text(_isApprovingCheckout ? 'Procesando...' : 'Aprobar y liberar pago'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -914,7 +1298,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final poster = _job!['profiles'];
     final skillName = skill != null ? skill['name_es'] : '';
     final skillIcon = skill != null ? skill['icon'] : '';
-    final posterName = poster != null ? poster['name'] : 'Usuario';
+    final posterName = poster != null ? poster['name'] ?? 'Usuario' : 'Usuario';
+    final posterAvatarUrl = poster != null ? poster['avatar_url'] as String? : null;
     final user = supabase.auth.currentUser;
     final isOwnJob = user != null && poster != null && poster['id'] == user.id;
 
@@ -1258,22 +1643,30 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     Container(
                       width: 48,
                       height: 48,
-                      decoration: const BoxDecoration(
-                        color: AppColors.navyVeryLight,
+                      decoration: BoxDecoration(
+                        color: posterAvatarUrl == null ? AppColors.navyVeryLight : null,
                         shape: BoxShape.circle,
+                        image: posterAvatarUrl != null
+                            ? DecorationImage(
+                                image: NetworkImage(posterAvatarUrl),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
-                      child: Center(
-                        child: Text(
-                          posterName.isNotEmpty
-                              ? posterName[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.navyDark,
-                          ),
-                        ),
-                      ),
+                      child: posterAvatarUrl == null
+                          ? Center(
+                              child: Text(
+                                posterName.isNotEmpty
+                                    ? posterName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.navyDark,
+                                ),
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1307,6 +1700,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               if (_isHelperAssigned) ...[
                 const SizedBox(height: 16),
                 _buildCheckInSection(),
+              ],
+
+              // Seeker approval section (for job owner to confirm helper arrived)
+              if (isOwnJob) ...[
+                const SizedBox(height: 16),
+                _buildSeekerApprovalSection(),
+              ],
+
+              // Seeker checkout approval section (for job owner to approve completion and release payment)
+              if (isOwnJob) ...[
+                const SizedBox(height: 16),
+                _buildSeekerCheckoutApprovalSection(),
               ],
 
               const SizedBox(height: 32),

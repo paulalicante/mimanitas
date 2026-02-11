@@ -806,22 +806,30 @@ class _JobApplicationsScreenState extends State<JobApplicationsScreen>
                                         Container(
                                           width: 48,
                                           height: 48,
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.navyVeryLight,
+                                          decoration: BoxDecoration(
+                                            color: helperAvatar == null ? AppColors.navyVeryLight : null,
                                             shape: BoxShape.circle,
+                                            image: helperAvatar != null
+                                                ? DecorationImage(
+                                                    image: NetworkImage(helperAvatar),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : null,
                                           ),
-                                          child: Center(
-                                            child: Text(
-                                              helperName.isNotEmpty
-                                                  ? helperName[0].toUpperCase()
-                                                  : 'U',
-                                              style: const TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.navyDark,
-                                              ),
-                                            ),
-                                          ),
+                                          child: helperAvatar == null
+                                              ? Center(
+                                                  child: Text(
+                                                    helperName.isNotEmpty
+                                                        ? helperName[0].toUpperCase()
+                                                        : 'U',
+                                                    style: const TextStyle(
+                                                      fontSize: 24,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppColors.navyDark,
+                                                    ),
+                                                  ),
+                                                )
+                                              : null,
                                         ),
                                         const SizedBox(width: 12),
                                         // Helper info

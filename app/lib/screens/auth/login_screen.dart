@@ -541,8 +541,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
 
-            // DEV ONLY: Quick login buttons
-            if (kDebugMode) ...[
+            // DEV ONLY: Quick login buttons (shown in all builds for testing)
+            if (true) ...[
               Container(
                 constraints: const BoxConstraints(maxWidth: 420),
                 margin: const EdgeInsets.fromLTRB(24, 0, 24, 32),
